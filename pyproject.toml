@@ -1,15 +1,20 @@
 [project]
-name = "nonebot-plugin-example"
+name = "nonebot-plugin-picmenu-next"
 dynamic = ["version"]
-description = "Template plugin project"
+description = "Next gen pic menu plugin"
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
-dependencies = ["nonebot2>=2.3.1", "nonebot-plugin-alconna>=0.48.0"]
+dependencies = [
+    "nonebot2>=2.3.1",
+    "nonebot-plugin-alconna>=0.54.0",
+    "nonebot-plugin-waiter>=0.8.0",
+    "nonebot-plugin-htmlrender>=0.4.0",
+]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"
 license = { text = "MIT" }
 
 [project.urls]
-homepage = "https://github.com/owner/nonebot-plugin-example"
+homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picmenu-next"
 
 [dependency-groups]
 dev = []
@@ -23,4 +28,4 @@ includes = []
 
 [tool.pdm.version]
 source = "file"
-path = "nonebot_plugin_example/__init__.py"
+path = "nonebot_plugin_picmenu_next/__init__.py"
