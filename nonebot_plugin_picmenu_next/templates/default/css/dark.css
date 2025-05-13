@@ -1,0 +1,10 @@
+:root {
+  --background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --background-color-wrapper: #3336;
+  --card-background-color: unset;
+  --card-background-image: linear-gradient(60deg, #29323c99 0%, #373c4299 100%);
+  --font-color-main: #fffd;
+  --font-color-sub: #cccd;
+  --font-color-card-index: #ccc6;
+  --title-before-color: #ab7dc5;
+}

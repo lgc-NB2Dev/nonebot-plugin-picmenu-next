@@ -1,5 +1,5 @@
 [project]
-name = "nonebot-plugin-example"
+name = "nonebot-plugin-picmenu-next"
 dynamic = ["version"]
 description = "Template plugin project"
 authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
@@ -9,7 +9,7 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [project.urls]
-homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-example"
+homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picmenu-next"
 
 [dependency-groups]
 dev = []

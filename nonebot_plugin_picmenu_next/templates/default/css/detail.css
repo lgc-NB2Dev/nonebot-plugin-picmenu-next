@@ -1,0 +1,15 @@
+main {
+  width: fit-content;
+  max-width: 810px;
+}
+
+.inner-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.card-grid.functions {
+  --grid-columns: 2;
+}

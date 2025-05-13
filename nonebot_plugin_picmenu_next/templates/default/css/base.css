@@ -1,0 +1,131 @@
+:root {
+  --background-color: unset;
+  --background-image: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+
+  --background-color-wrapper: #fff3;
+  --background-image-wrapper: unset;
+
+  --card-background-color: unset;
+  --card-background-image: linear-gradient(120deg, #fdfbfb99 0%, #ebedee99 100%);
+  --card-background-border: #00000014 1px solid;
+  --card-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px;
+
+  --text-shadow: 0 0 4px #3332;
+
+  --font-color-main: #000d;
+  --font-color-sub: #666d;
+
+  --font-color-card-index: #3336;
+  --text-shadow-card-index: 0 0 4px #3331;
+
+  --title-before-color: #8174a0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+  padding: 0;
+}
+
+h1.deco::before,
+h2.deco::before,
+h3.deco::before,
+h4.deco::before,
+h5.deco::before,
+h6.deco::before {
+  content: '';
+  display: inline-block;
+  vertical-align: -10%;
+  width: 4px;
+  height: 1em;
+  margin-left: 2px;
+  margin-right: 6px;
+  border-radius: 9999px;
+  background-color: var(--title-before-color);
+  box-shadow: var(--text-shadow);
+}
+
+main {
+  background-color: var(--background-color);
+  background-image: var(--background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  color: var(--font-color-main);
+  font-family: 'HarmonyOS Sans SC', sans-serif;
+  text-shadow: var(--text-shadow);
+}
+
+main > .main-wrapper {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  background-color: var(--background-color-wrapper);
+  background-image: var(--background-image-wrapper);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.main-footer {
+  text-align: end;
+  color: var(--font-color-sub);
+}
+
+.card-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+}
+
+.card {
+  border-radius: 8px;
+  padding: 8px;
+
+  background-color: var(--card-background-color);
+  background-image: var(--card-background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: var(--card-background-border);
+  box-shadow: var(--card-shadow);
+
+  text-shadow: none;
+}
+
+.card.flex {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card.relative {
+  position: relative;
+}
+
+.card .index {
+  position: absolute;
+  bottom: 0;
+  right: 10px;
+  font-size: 36px;
+  font-style: italic;
+  color: var(--font-color-card-index);
+  text-shadow: var(--text-shadow-card-index);
+  z-index: 2;
+}
+
+.card .index > .no {
+  font-size: 24px;
+}
