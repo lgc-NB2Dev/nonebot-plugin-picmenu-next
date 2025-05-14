@@ -18,7 +18,9 @@
   --font-color-card-index: #3336;
   --text-shadow-card-index: 0 0 4px #3331;
 
-  --title-before-color: #8174a0;
+  --title-deco-color: #8174a0;
+
+  --font-family-main: 'HarmonyOS Sans SC';
 }
 
 * {
@@ -50,7 +52,7 @@ h6.deco::before {
   margin-left: 2px;
   margin-right: 6px;
   border-radius: 9999px;
-  background-color: var(--title-before-color);
+  background-color: var(--title-deco-color);
   box-shadow: var(--text-shadow);
 }
 
@@ -62,7 +64,7 @@ main {
   background-repeat: no-repeat;
 
   color: var(--font-color-main);
-  font-family: 'HarmonyOS Sans SC', sans-serif;
+  font-family: var(--font-family-main), sans-serif;
   text-shadow: var(--text-shadow);
 }
 

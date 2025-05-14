@@ -3,7 +3,13 @@ name = "nonebot-plugin-picmenu-next"
 dynamic = ["version"]
 description = "Template plugin project"
 authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
-dependencies = ["nonebot2>=2.4.1", "nonebot-plugin-alconna>=0.54.2"]
+dependencies = [
+    "nonebot2>=2.4.1",
+    "nonebot-plugin-alconna>=0.54.2",
+    "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.11.2",
+    "pypinyin>=0.54.0",
+    "jieba>=0.42.1",
+]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"
 license = { text = "MIT" }
@@ -23,4 +29,4 @@ includes = []
 
 [tool.pdm.version]
 source = "file"
-path = "nonebot_plugin_example/__init__.py"
+path = "nonebot_plugin_picmenu_next/__init__.py"

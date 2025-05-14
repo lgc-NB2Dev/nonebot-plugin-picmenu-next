@@ -1,0 +1,21 @@
+{%- extends "base.html.jinja" -%}
+
+{%- block head -%}
+<link rel="stylesheet" href="./css/index.css" />
+{%- endblock -%}
+
+{%- block main -%}
+<div class="main-header">
+  <h1>机器人帮助菜单</h1>
+  <p>发送 <b>{{ cfg.pfx }}帮助 插件名或序号</b> 获取关于某插件的更多信息</p>
+</div>
+<div class="card-grid">
+  {% for it in infos -%}
+  <div class="card flex relative">
+    <div class="index"><span class="no">No.</span>{{ loop.index }}</div>
+    <h3>{{ it.name }}</h3>
+    <p>{{ it.description | br }}</p>
+  </div>
+  {% endfor -%}
+</div>
+{%- endblock -%}

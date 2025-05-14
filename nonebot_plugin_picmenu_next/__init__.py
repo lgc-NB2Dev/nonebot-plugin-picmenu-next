@@ -1,6 +1,10 @@
 # ruff: noqa: E402
 
+from nonebot import get_driver
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters, require
+
+from .data_source import refresh_infos
+from .templates import load_builtin_templates
 
 require("nonebot_plugin_alconna")
 require("nonebot_plugin_waiter")
@@ -23,3 +27,12 @@ __plugin_meta__ = PluginMetadata(
     ),
     extra={"License": "MIT", "Author": "LgCookie"},
 )
+
+load_builtin_templates()
+
+driver = get_driver()
+
+
+@driver.on_startup
+async def _():
+    await refresh_infos()
