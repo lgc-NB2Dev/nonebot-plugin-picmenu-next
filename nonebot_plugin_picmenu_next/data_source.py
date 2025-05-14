@@ -1,10 +1,11 @@
 import asyncio
 import importlib
 from asyncio import iscoroutinefunction
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Iterable
 from importlib.metadata import Distribution, distribution
 from typing import Any, Optional, Union
 from typing_extensions import Self
+from weakref import ref
 
 import jieba
 from cookit.loguru import warning_suppress
@@ -54,8 +55,8 @@ class PMDataItem(PMDataItemRaw):
 
     @classmethod
     async def resolve(cls, plugin: Plugin, data: PMDataItemRaw) -> Self:
-        data_dict: dict = type_dump_python(data)
-        if isinstance((hidden := data_dict["pmn_hidden"]), str):
+        data_dict: dict = type_dump_python(data, exclude_unset=True)
+        if isinstance((hidden := data_dict.get("pmn_hidden")), str):
             data_dict["pmn_hidden_v"] = await resolve_func_hidden(plugin, hidden)
         return cls(**data_dict)
 
@@ -71,8 +72,8 @@ class PMNData(PMNDataRaw):
 
     @classmethod
     async def resolve(cls, plugin: Plugin, data: PMNDataRaw) -> Self:
-        data_dict: dict = type_dump_python(data)
-        if isinstance((hidden := data_dict["hidden"]), str):
+        data_dict: dict = type_dump_python(data, exclude_unset=True)
+        if isinstance((hidden := data_dict.get("hidden")), str):
             data_dict["hidden_v"] = await resolve_func_hidden(plugin, hidden)
         return cls(**data_dict)
 
@@ -100,7 +101,7 @@ class PMNPluginInfoRaw(BaseModel):
     description: Optional[str] = None
     usage: Optional[str] = None
     pm_data: Optional[list[PMDataItemRaw]] = None
-    pmn: Optional[PMNDataRaw] = None
+    pmn: PMNDataRaw = PMNDataRaw()
 
 
 class PMNPluginInfo(PMNPluginInfoRaw):
@@ -109,10 +110,10 @@ class PMNPluginInfo(PMNPluginInfoRaw):
 
     @classmethod
     async def resolve(cls, plugin: Plugin, data: PMNPluginInfoRaw) -> Self:
-        data_dict: dict = type_dump_python(data)
+        data_dict: dict = type_dump_python(data, exclude_unset=True)
         tasks: list[Awaitable] = []
 
-        if pm_data := data_dict["pm_data"]:
+        if pm_data := data_dict.get("pm_data"):
 
             async def _ts(x: PMDataItem):
                 with warning_suppress(
@@ -127,7 +128,7 @@ class PMNPluginInfo(PMNPluginInfoRaw):
 
             tasks.append(_t())
 
-        if pmn := data_dict["pmn"]:
+        if pmn := data_dict.get("pmn"):
 
             async def _t():
                 v = None
@@ -211,6 +212,10 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
         else (dist.metadata.get("Summary") if (dist := get_dist()) else None)
     )
 
+    pmn = (extra.pmn if extra else None) or PMNDataRaw()
+    if ("hidden" not in pmn.model_fields_set) and meta and meta.type == "library":
+        pmn = PMNDataRaw(hidden=True)
+
     logger.debug(f"Completed to get info of plugin {plugin.id_}")
     return PMNPluginInfoRaw(
         name=name,
@@ -219,7 +224,7 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
         description=description,
         usage=meta.usage if meta else None,
         pm_data=extra.menu_data if extra else None,
-        pmn=extra.pmn if extra else None,
+        pmn=pmn,
     )
 
 
@@ -243,9 +248,7 @@ def pinyin_sorter_k(v: str):
     )
 
 
-async def collect_plugin_infos():
-    plugins = get_loaded_plugins()
-
+async def collect_plugin_infos(plugins: Iterable[Plugin]):
     async def _get(p: Plugin):
         with warning_suppress(f"Failed to get plugin info of {p.id_}"):
             return await get_info_from_plugin(p)
@@ -259,14 +262,31 @@ async def collect_plugin_infos():
     return infos
 
 
+_plugin_refs: list[ref[Plugin]] = []
 _infos: list[PMNPluginInfoRaw] = []
 
 
 async def refresh_infos():
-    global _infos
-    _infos = await collect_plugin_infos()
+    global _plugin_refs, _infos
+    plugins = get_loaded_plugins()
+    _infos = await collect_plugin_infos(plugins)
+    _plugin_refs = [ref(plugin) for plugin in plugins]
     return _infos
+
+
+def get_plugin_refs():
+    return _plugin_refs
 
 
 def get_infos():
     return _infos
+
+
+async def get_resolved_infos():
+    return await asyncio.gather(
+        *(
+            PMNPluginInfo.resolve(p, x)
+            for r, x in zip(_plugin_refs, _infos)
+            if (p := r())
+        ),
+    )

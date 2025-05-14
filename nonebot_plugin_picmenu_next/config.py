@@ -1,9 +1,11 @@
+from cookit.pyd import model_with_alias_generator
 from nonebot import get_plugin_config
 from pydantic import BaseModel
 
 
+@model_with_alias_generator(lambda x: f"pmn_{x}")
 class ConfigModel(BaseModel):
-    pass
+    template: str = "default"
 
 
 config: ConfigModel = get_plugin_config(ConfigModel)
