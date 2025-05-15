@@ -1,0 +1,52 @@
+{%- extends "base.html.jinja" -%}
+
+{%- block head -%}
+<link rel="stylesheet" href="./css/detail.css" />
+{%- endblock -%}
+
+{%- block main -%}
+<div class="main-header">
+  <h1>{{ info.name }}</h1>
+  <p>{{ " | ".join(x for x in (info.author, info.version) if x) }}</p>
+</div>
+{% if func -%}
+<div class="inner-flex">
+  <h2 class="deco">{{ func.name }}</h2>
+  <div class="card">{{ func.detail_des }}</div>
+</div>
+{% else -%}
+{% if info.description -%}
+<div class="inner-flex">
+  <h2 class="deco">简介</h2>
+  <div class="card">{{ info.description }}</div>
+</div>
+{% endif -%}
+{% if info.usage -%}
+<div class="inner-flex">
+  <h2 class="deco">用法</h2>
+  <div class="card">{{ info.usage | br }}</div>
+</div>
+{% endif -%}
+{% if info.pm_data -%}
+<div class="inner-flex">
+  <div>
+    <h2 class="deco">功能</h2>
+    <p>发送 <b>菜单 {{ info_index }} 功能名称或序号</b> 获取某功能详细信息</p>
+  </div>
+  <div class="card-grid functions">
+    {% for x in info.pm_data -%}
+    <div class="card flex relative">
+      <div class="index"><span class="no">No.</span>{{ loop.index }}</div>
+      <h3>{{ x.func }}</h3>
+      <p>
+        触发条件：{{ x.trigger_method }}<br />
+        触发方式：{{ x.trigger_condition }}<br />
+        {{ x.brief_des | br }}
+      </p>
+    </div>
+    {% endfor -%}
+  </div>
+</div>
+{% endif -%}
+{% endif -%}
+{%- endblock -%}

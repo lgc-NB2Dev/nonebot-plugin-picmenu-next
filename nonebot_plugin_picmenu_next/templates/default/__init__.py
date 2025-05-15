@@ -14,8 +14,8 @@ from nonebot_plugin_alconna.uniseg import UniMessage
 from nonebot_plugin_htmlrender import get_new_page
 from pydantic import BaseModel, Field
 
-from ...data_source import PMNPluginInfo
-from .. import index_template
+from ...data_source import PMDataItem, PMNPluginInfo
+from .. import detail_templates, func_detail_templates, index_templates
 
 if TYPE_CHECKING:
     from playwright.async_api import Route
@@ -78,21 +78,57 @@ def version():
     return __version__
 
 
-@index_template("default")
-async def render_index(infos: list[PMNPluginInfo]) -> UniMessage:
-    template = jj_env.get_template("index.html.jinja")
-    html = await template.render_async(
-        infos=infos,
+async def render(template: str, routers: RouterGroup, **kwargs):
+    template_obj = jj_env.get_template(template)
+    html = await template_obj.render_async(
+        **kwargs,
         cfg=template_config,
         version=version(),
     )
     if debug.enabled:
-        debug.write(html, "index_{time}.html")
-
-    routers = base_routers.copy()
+        debug.write(html, f"{template.replace('.html.jinja', '')}_{{time}}.html")
 
     async with get_new_page() as page:
         await routers.apply(page)
         await page.goto(f"{ROUTE_BASE_URL}/")
         pic = await screenshot_html(page, html, selector="main")
     return UniMessage.image(raw=pic)
+
+
+@index_templates("default")
+async def render_index(infos: list[PMNPluginInfo]) -> UniMessage:
+    routers = base_routers.copy()
+    return await render(
+        "index.html.jinja",
+        routers,
+        infos=infos,
+    )
+
+
+@detail_templates("default")
+async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
+    routers = base_routers.copy()
+    return await render(
+        "detail.html.jinja",
+        routers,
+        info=info,
+        info_index=info_index,
+    )
+
+
+@func_detail_templates("default")
+async def render_func_detail(
+    info: PMNPluginInfo,
+    info_index: int,
+    func: PMDataItem,
+    func_index: int,
+) -> UniMessage:
+    routers = base_routers.copy()
+    return await render(
+        "detail.html.jinja",
+        routers,
+        info=info,
+        info_index=info_index,
+        func=func,
+        func_index=func_index,
+    )

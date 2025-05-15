@@ -9,6 +9,7 @@ dependencies = [
     "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.11.2",
     "pypinyin>=0.54.0",
     "jieba>=0.42.1",
+    "thefuzz>=0.22.1",
 ]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"
