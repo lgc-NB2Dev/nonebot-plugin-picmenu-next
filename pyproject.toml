@@ -6,7 +6,7 @@ authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.4.1",
     "nonebot-plugin-alconna>=0.54.2",
-    "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.11.2",
+    "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.11.3",
     "pypinyin>=0.54.0",
     "jieba>=0.42.1",
     "thefuzz>=0.22.1",
