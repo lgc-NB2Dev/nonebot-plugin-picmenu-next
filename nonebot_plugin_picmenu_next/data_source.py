@@ -296,7 +296,7 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
     )
     infos = [x for x in infos if x]
     logger.success(f"Collected {len(infos)} plugin infos")
-    infos.sort(key=lambda x: x.name)
+    infos.sort(key=lambda x: x.name.casefold())
     return infos
 
 
