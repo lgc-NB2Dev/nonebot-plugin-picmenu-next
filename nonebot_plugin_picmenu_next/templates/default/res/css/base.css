@@ -56,6 +56,10 @@ h6.deco::before {
   box-shadow: var(--text-shadow);
 }
 
+.sub {
+  color: var(--font-color-sub);
+}
+
 main {
   background-color: var(--background-color);
   background-image: var(--background-image);

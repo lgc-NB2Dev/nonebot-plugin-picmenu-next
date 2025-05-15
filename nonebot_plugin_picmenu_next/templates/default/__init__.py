@@ -105,6 +105,17 @@ async def render_index(infos: list[PMNPluginInfo]) -> UniMessage:
     )
 
 
+def get_plugin_desc(info: PMNPluginInfo):
+    return " | ".join(
+        x
+        for x in (
+            f"By {info.author}" if info.author else None,
+            f"v{info.version}" if info.version else None,
+        )
+        if x
+    )
+
+
 @detail_templates("default")
 async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
     routers = base_routers.copy()
@@ -113,6 +124,7 @@ async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
         routers,
         info=info,
         info_index=info_index,
+        desc=get_plugin_desc(info),
     )
 
 
@@ -129,6 +141,7 @@ async def render_func_detail(
         routers,
         info=info,
         info_index=info_index,
+        desc=get_plugin_desc(info),
         func=func,
         func_index=func_index,
     )

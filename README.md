@@ -24,12 +24,6 @@ _✨ NoneBot 插件简单描述 ✨_
 
 <br />
 
-<!-- <a href="https://pydantic.dev">
-  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v1.json" alt="Pydantic Version 1" >
-</a> -->
-<!-- <a href="https://pydantic.dev">
-  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json" alt="Pydantic Version 2" >
-</a> -->
 <a href="https://pydantic.dev">
   <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/template/pyd-v1-or-v2.json" alt="Pydantic Version 1 Or 2" >
 </a>

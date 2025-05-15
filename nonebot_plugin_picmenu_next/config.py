@@ -5,7 +5,9 @@ from pydantic import BaseModel
 
 @model_with_alias_generator(lambda x: f"pmn_{x}")
 class ConfigModel(BaseModel):
-    template: str = "default"
+    index_template: str = "default"
+    detail_template: str = "default"
+    func_detail_template: str = "default"
 
 
 config: ConfigModel = get_plugin_config(ConfigModel)

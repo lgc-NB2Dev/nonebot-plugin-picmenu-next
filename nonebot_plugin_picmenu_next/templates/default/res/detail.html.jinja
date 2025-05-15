@@ -5,16 +5,32 @@
 {%- endblock -%}
 
 {%- block main -%}
-<div class="main-header">
-  <h1>{{ info.name }}</h1>
-  <p>{{ " | ".join(x for x in (info.author, info.version) if x) }}</p>
-</div>
 {% if func -%}
+<div class="main-header">
+  <h1>{{ info.name }} <span class="sub">&gt;</span> {{ func.func }}</h1>
+  <p>{{ desc }}</p>
+</div>
 <div class="inner-flex">
-  <h2 class="deco">{{ func.name }}</h2>
-  <div class="card">{{ func.detail_des }}</div>
+  <h2 class="deco">触发条件</h2>
+  <div class="card">{{ func.trigger_method }}</div>
+</div>
+<div class="inner-flex">
+  <h2 class="deco">触发方式</h2>
+  <div class="card">{{ func.trigger_condition }}</div>
+</div>
+<div class="inner-flex">
+  <h2 class="deco">简要介绍</h2>
+  <div class="card">{{ func.brief_des | br }}</div>
+</div>
+<div class="inner-flex">
+  <h2 class="deco">详细用法</h2>
+  <div class="card">{{ func.detail_des | br }}</div>
 </div>
 {% else -%}
+<div class="main-header">
+  <h1>{{ info.name }}</h1>
+  <p>{{ desc }}</p>
+</div>
 {% if info.description -%}
 <div class="inner-flex">
   <h2 class="deco">简介</h2>
@@ -31,7 +47,7 @@
 <div class="inner-flex">
   <div>
     <h2 class="deco">功能</h2>
-    <p>发送 <b>菜单 {{ info_index }} 功能名称或序号</b> 获取某功能详细信息</p>
+    <p>发送 <b>菜单 {{ info_index + 1 }} 功能名称或序号</b> 获取某功能详细信息</p>
   </div>
   <div class="card-grid functions">
     {% for x in info.pm_data -%}
