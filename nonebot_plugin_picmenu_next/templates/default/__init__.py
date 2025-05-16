@@ -1,4 +1,3 @@
-import re
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -14,11 +13,12 @@ from nonebot_plugin_alconna.uniseg import UniMessage
 from nonebot_plugin_htmlrender import get_new_page
 from pydantic import BaseModel, Field
 
+from ...config import version
 from ...data_source import PMDataItem, PMNPluginInfo
 from .. import detail_templates, func_detail_templates, index_templates
+from ..pw_utils import ROUTE_BASE_URL, base_routers
 
 if TYPE_CHECKING:
-    from playwright.async_api import Route
     from yarl import URL
 
 
@@ -39,30 +39,17 @@ template_config = get_plugin_config(TemplateConfigModel)
 
 
 RES_DIR = Path(__file__).parent / "res"
-ROUTE_BASE_URL = "https://picmenu-next.nonebot"
-debug = DebugFileWriter(Path.cwd() / "debug", "picmenu-next", "default")
-
 jj_env = jj.Environment(
-    loader=jj.FileSystemLoader(Path(__file__).parent / "res"),
+    loader=jj.FileSystemLoader(RES_DIR),
     autoescape=True,
     enable_async=True,
 )
 register_all_filters(jj_env)
 
-base_routers = RouterGroup()
+debug = DebugFileWriter(Path.cwd() / "debug", "picmenu-next", "default")
 
 
-@base_routers.router(f"{ROUTE_BASE_URL}/")
-@log_router_err()
-async def _(route: "Route", **_):
-    await route.fulfill(content_type="text/html", body="<h1>Hello World!</h1>")
-
-
-@base_routers.router(re.compile(rf"^{ROUTE_BASE_URL}/local-file\?path=[^/]+"))
-@make_real_path_router
-@log_router_err()
-async def _(url: "URL", **_):
-    return Path(url.query["path"]).resolve()
+base_routers = base_routers.copy()
 
 
 @base_routers.router(f"{ROUTE_BASE_URL}/**/*", 99)
@@ -70,12 +57,6 @@ async def _(url: "URL", **_):
 @log_router_err()
 async def _(url: "URL", **_):
     return RES_DIR.joinpath(*url.parts[1:])
-
-
-def version():
-    from ... import __version__
-
-    return __version__
 
 
 async def render(template: str, routers: RouterGroup, **kwargs):
@@ -105,17 +86,6 @@ async def render_index(infos: list[PMNPluginInfo]) -> UniMessage:
     )
 
 
-def get_plugin_desc(info: PMNPluginInfo):
-    return " | ".join(
-        x
-        for x in (
-            f"By {info.author}" if info.author else None,
-            f"v{info.version}" if info.version else None,
-        )
-        if x
-    )
-
-
 @detail_templates("default")
 async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
     routers = base_routers.copy()
@@ -124,7 +94,6 @@ async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
         routers,
         info=info,
         info_index=info_index,
-        desc=get_plugin_desc(info),
     )
 
 
@@ -141,7 +110,6 @@ async def render_func_detail(
         routers,
         info=info,
         info_index=info_index,
-        desc=get_plugin_desc(info),
         func=func,
         func_index=func_index,
     )

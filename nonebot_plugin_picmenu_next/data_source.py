@@ -202,6 +202,7 @@ class PMNPluginInfoRaw(BaseModel):
     pm_data: Optional[list[PMDataItemRaw]] = None
     pmn: PMNDataRaw = PMNDataRaw()
 
+    _plugin_ref: Optional[ref[Plugin]] = PrivateAttr(None)
     _resolved_pm_data: Optional[list[PMDataItem]] = PrivateAttr(None)
 
     @cached_property
@@ -211,6 +212,27 @@ class PMNPluginInfoRaw(BaseModel):
     @cached_property
     def name_pinyin(self) -> PinyinChunkSequence:
         return PinyinChunkSequence.from_raw(self.name)
+
+    @property
+    def plugin(self) -> Optional[Plugin]:
+        if self._plugin_ref:
+            return self._plugin_ref()
+        return None
+
+    @plugin.setter
+    def plugin(self, plugin: Plugin):
+        self._plugin_ref = ref(plugin)
+
+    @cached_property
+    def subtitle(self) -> str:
+        return " | ".join(
+            x
+            for x in (
+                f"By {self.author}" if self.author else None,
+                f"v{self.version}" if self.version else None,
+            )
+            if x
+        )
 
     async def resolve_pm_data(self, plugin: Plugin):
         if self._resolved_pm_data is not None:
@@ -233,20 +255,15 @@ class PMNPluginInfoRaw(BaseModel):
 class PMNPluginInfo(PMNPluginInfoRaw):
     pmn_v: PMNData = PMNData()
 
-    _plugin: Optional[ref[Plugin]] = PrivateAttr(None)
-
-    @property
-    def plugin(self) -> Optional[Plugin]:
-        if self._plugin:
-            return self._plugin()
-        return None
-
-    @plugin.setter
-    def plugin(self, plugin: Plugin):
-        self._plugin = ref(plugin)
-
     @classmethod
-    async def resolve(cls, plugin: Plugin, data: PMNPluginInfoRaw) -> Self:
+    async def resolve(
+        cls,
+        data: PMNPluginInfoRaw,
+        plugin: Optional[Plugin] = None,
+    ) -> Self:
+        if (not plugin) and (not (plugin := data.plugin)):
+            raise ValueError("Plugin ref is expired, please manually set")
+
         data_dict: dict = type_dump_python(data, exclude_unset=True)
         tasks: list[Awaitable] = []
 
@@ -376,30 +393,19 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
 
 
 _infos: list[PMNPluginInfoRaw] = []
-_plugin_refs: list[ref[Plugin]] = []
 
 
 def get_infos() -> list[PMNPluginInfoRaw]:
     return _infos
 
 
-def get_plugin_refs() -> list[ref[Plugin]]:
-    return _plugin_refs
-
-
 async def refresh_infos() -> list[PMNPluginInfoRaw]:
-    global _plugin_refs, _infos
-    plugins = get_loaded_plugins()
-    _infos = await collect_plugin_infos(plugins)
-    _plugin_refs = [ref(plugin) for plugin in plugins]
+    global _infos
+    _infos = await collect_plugin_infos(get_loaded_plugins())
     return _infos
 
 
 async def get_resolved_infos() -> list[PMNPluginInfo]:
     return await asyncio.gather(
-        *(
-            PMNPluginInfo.resolve(p, x)
-            for r, x in zip(_plugin_refs, _infos)
-            if (p := r())
-        ),
+        *(PMNPluginInfo.resolve(x, p) for x in _infos if (p := x.plugin)),
     )

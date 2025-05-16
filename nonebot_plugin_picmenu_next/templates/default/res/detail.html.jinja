@@ -7,7 +7,7 @@
 {%- block main -%}
 <div class="main-header">
   <h1>{{ info.name }}{% if func %} <span class="sub">&gt;</span> {{ func.func }}{% endif %}</h1>
-  {% if desc %}<p>{{ desc }}</p>{% endif %}
+  {% if info.subtitle %}<p>{{ info.subtitle }}</p>{% endif %}
 </div>
 {% if func -%}
 <div class="inner-flex">

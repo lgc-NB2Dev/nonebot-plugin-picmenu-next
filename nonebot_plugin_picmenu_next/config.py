@@ -11,3 +11,9 @@ class ConfigModel(BaseModel):
 
 
 config: ConfigModel = get_plugin_config(ConfigModel)
+
+
+def version():
+    from . import __version__
+
+    return __version__
