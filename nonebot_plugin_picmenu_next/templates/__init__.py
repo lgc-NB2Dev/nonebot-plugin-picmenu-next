@@ -6,7 +6,7 @@ from nonebot import logger
 from nonebot_plugin_alconna.uniseg import UniMessage
 
 from ..config import config
-from ..data_source import PMDataItem, PMNPluginInfo
+from ..data_source.models import PMDataItem, PMNPluginInfo
 
 TN = TypeVar("TN", bound=HasNameProtocol)
 

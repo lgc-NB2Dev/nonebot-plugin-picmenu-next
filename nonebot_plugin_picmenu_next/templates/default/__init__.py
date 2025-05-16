@@ -14,7 +14,7 @@ from nonebot_plugin_htmlrender import get_new_page
 from pydantic import BaseModel, Field
 
 from ...config import version
-from ...data_source import PMDataItem, PMNPluginInfo
+from ...data_source.models import PMDataItem, PMNPluginInfo
 from .. import detail_templates, func_detail_templates, index_templates
 from ..pw_utils import ROUTE_BASE_URL, base_routers
 

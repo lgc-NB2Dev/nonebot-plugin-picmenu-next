@@ -7,12 +7,8 @@ from nonebot_plugin_alconna import Query, on_alconna
 from nonebot_plugin_alconna.uniseg import UniMessage
 from thefuzz import process
 
-from .data_source import (
-    PinyinChunkSequence,
-    PMDataItem,
-    PMNPluginInfo,
-    get_resolved_infos,
-)
+from .data_source import get_resolved_infos
+from .data_source.models import PinyinChunkSequence, PMDataItem, PMNPluginInfo
 from .templates import detail_templates, func_detail_templates, index_templates
 
 alc = Alconna(

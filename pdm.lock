@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:87779797572d03db84e7efcb0b2b3a67d144939b1a1b56de6c15ff544aa95576"
+content_hash = "sha256:2a557cf6a9f4c1337d3c63963813113511f1b4308c2b374fe2fceec9899cd347"
 
 [[metadata.targets]]
 requires_python = "~=3.9"
@@ -312,6 +312,17 @@ dependencies = [
 files = [
     {file = "loguru-0.7.3-py3-none-any.whl", hash = "sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c"},
     {file = "loguru-0.7.3.tar.gz", hash = "sha256:19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6"},
+]
+
+[[package]]
+name = "marko"
+version = "2.1.3"
+requires_python = ">=3.8"
+summary = "A markdown parser with high extensibility."
+groups = ["default"]
+files = [
+    {file = "marko-2.1.3-py3-none-any.whl", hash = "sha256:b4125d44b94606d6f13ddc77fef8cc4c87f70d54bc7d52d6547958b9f998a9d5"},
+    {file = "marko-2.1.3.tar.gz", hash = "sha256:31aacb14867328f054cc39f884212907822a43d6a30cd75b0767e001a5e2f9fc"},
 ]
 
 [[package]]
