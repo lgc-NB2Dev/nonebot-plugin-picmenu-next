@@ -5,7 +5,7 @@ from asyncio import iscoroutinefunction
 from collections.abc import Awaitable, Iterable, Iterator, Sequence
 from functools import cached_property
 from importlib.metadata import Distribution, distribution
-from typing import Any, NamedTuple, Optional, Union, overload
+from typing import Any, Literal, NamedTuple, Optional, Union, overload
 from typing_extensions import Self, override
 from weakref import ref
 
@@ -299,17 +299,26 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
 
     name = normalize_plugin_name(meta.name if meta else plugin.id_)
 
-    _dist = ...
+    _dist: Union[Distribution, None, Literal[False]] = False
 
     def get_dist() -> Optional[Distribution]:
         nonlocal _dist
-        if _dist is ...:
-            _dist = None
+        if _dist is not False:
+            return _dist
+
+        _dist = None
+        module = plugin.module_name
+        while True:
             with warning_suppress(
-                f"Failed to get info of package {plugin.module_name}",
+                f"Failed to get info of package {module}",
+                level="DEBUG",
+                debug_stack=False,
             ):
-                _dist = distribution(plugin.module_name)
-        return _dist
+                _dist = distribution(module)
+                return _dist
+            if "." not in module:
+                return None
+            module = module.rsplit(".", 1)[0]
 
     ver = extra.version if extra else None
     if not ver:
