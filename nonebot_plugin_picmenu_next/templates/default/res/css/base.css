@@ -70,6 +70,8 @@ main {
   color: var(--font-color-main);
   font-family: var(--font-family-main), sans-serif;
   text-shadow: var(--text-shadow);
+
+  overflow: hidden;
 }
 
 main > .main-wrapper {

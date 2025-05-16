@@ -88,10 +88,10 @@ async def render(template: str, routers: RouterGroup, **kwargs):
     if debug.enabled:
         debug.write(html, f"{template.replace('.html.jinja', '')}_{{time}}.html")
 
-    async with get_new_page() as page:
+    async with get_new_page(viewport={"width": 1920, "height": 5400}) as page:
         await routers.apply(page)
         await page.goto(f"{ROUTE_BASE_URL}/")
-        pic = await screenshot_html(page, html, selector="main")
+        pic = await screenshot_html(page, html, selector="main", type="jpeg")
     return UniMessage.image(raw=pic)
 
 

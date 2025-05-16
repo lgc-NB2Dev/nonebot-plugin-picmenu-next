@@ -14,7 +14,7 @@
   <div class="card flex relative">
     <div class="index"><span class="no">No.</span>{{ loop.index }}</div>
     <h3>{{ it.name }}</h3>
-    <p>{{ it.description | br }}</p>
+    <p>{{ it.description | safe_layout }}</p>
   </div>
   {% endfor -%}
 </div>
