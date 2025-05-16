@@ -11,8 +11,8 @@ from thefuzz import process
 from .data_source import (
     PMDataItem,
     PMNPluginInfo,
+    TextChunkList,
     get_resolved_infos,
-    transform_to_pinyin,
 )
 from .templates import detail_templates, func_detail_templates, index_templates
 
@@ -96,12 +96,12 @@ async def query_plugin(
     choices: list[str] = []
     choices_pinyin: list[str] = []
     for info in infos:
-        choices.append(info.name.casefold())
-        choices_pinyin.append(info.name_pinyin.casefold())
+        choices.append(info.casefold_name)
+        choices_pinyin.append(info.name_pinyin.casefold_str)
 
     similarities = get_name_similarities(
         query.casefold(),
-        transform_to_pinyin(query).casefold(),
+        TextChunkList.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )
@@ -122,12 +122,12 @@ async def query_func_detail(
     choices: list[str] = []
     choices_pinyin: list[str] = []
     for data in pm_data:
-        choices.append(data.func.casefold())
-        choices_pinyin.append(data.func_pinyin.casefold())
+        choices.append(data.casefold_func)
+        choices_pinyin.append(data.func_pinyin.casefold_str)
 
     similarities = get_name_similarities(
         query.casefold(),
-        transform_to_pinyin(query).casefold(),
+        TextChunkList.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )

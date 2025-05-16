@@ -1,9 +1,11 @@
 import asyncio
 import importlib
+import re
 from asyncio import iscoroutinefunction
 from collections.abc import Awaitable, Iterable
+from functools import cached_property
 from importlib.metadata import Distribution, distribution
-from typing import Any, Optional, Union
+from typing import Any, NamedTuple, Optional, Union
 from typing_extensions import Self
 from weakref import ref
 
@@ -14,6 +16,9 @@ from nonebot import logger
 from nonebot.plugin import Plugin, get_loaded_plugins
 from pydantic import BaseModel, Field, PrivateAttr
 from pypinyin import Style, pinyin
+
+full_pkg_name_re = re.compile(r"^(nonebot[-_]plugin[-_])?(?P<name>.+)$")
+pkg_name_re = re.compile(r"[A-Za-z0-9-_\.:]+")
 
 
 async def call_entrypoint(plugin: Plugin, entrypoint: str) -> Any:
@@ -38,9 +43,55 @@ async def resolve_func_hidden(plugin: Plugin, entrypoint: str) -> bool:
     return False
 
 
+class _NotCHNStr(str):
+    __slots__ = ()
+
+
+class TextChunk(NamedTuple):
+    is_pinyin: bool
+    text: str
+    tone: int = 0
+
+    @classmethod
+    def from_pinyin_res(cls, text: str) -> Self:
+        is_pinyin = not isinstance(text, _NotCHNStr)
+        tone = 0
+        if is_pinyin:
+            text = text[:-1]
+            tone = int(text[-1])
+        return cls(is_pinyin=is_pinyin, text=text, tone=tone)
+
+    @cached_property
+    def casefold_str(self) -> str:
+        return self.text.casefold()
+
+    def __str__(self):
+        return f"{self.text}{self.tone}" if self.is_pinyin else self.text
+
+
+class TextChunkList(tuple[TextChunk]):
+    __slots__ = ()
+
+    @classmethod
+    def from_raw(cls, text: str) -> Self:
+        transformed = pinyin(
+            jieba.lcut(text),
+            style=Style.TONE3,
+            errors=lambda x: _NotCHNStr(x),
+            neutral_tone_with_five=True,
+        )
+        return cls(TextChunk.from_pinyin_res(x[0]) for x in transformed)
+
+    @cached_property
+    def casefold_str(self) -> str:
+        return str(self).casefold()
+
+    def __str__(self):
+        return " ".join(str(x) for x in self)
+
+
 class PMDataItemRaw(BaseModel):
     func: str
-    func_pinyin: str
     trigger_method: str
     trigger_condition: str
     brief_des: str
@@ -50,15 +101,13 @@ class PMDataItemRaw(BaseModel):
     hidden: Union[bool, str] = Field(default=False, alias="pmn_hidden")
     template: Optional[str] = Field(default=None, alias="pmn_template")
 
-    @model_validator(mode="before")
-    def init_func_pinyin(cls, values: Any):  # noqa: N805
-        if isinstance(values, BaseModel):
-            values = type_dump_python(values, exclude_unset=True)
-        if isinstance((func := values.get("func")), str) and (
-            not values.get("func_pinyin")
-        ):
-            values["func_pinyin"] = transform_to_pinyin(func)
-        return values
+    @cached_property
+    def casefold_func(self) -> str:
+        return self.func.casefold()
+
+    @cached_property
+    def func_pinyin(self) -> TextChunkList:
+        return TextChunkList.from_raw(self.func)
 
 
 class PMDataItem(PMDataItemRaw):
@@ -69,7 +118,10 @@ class PMDataItem(PMDataItemRaw):
         data_dict: dict = type_dump_python(data, exclude_unset=True)
         if isinstance((hidden := data_dict.get("pmn_hidden")), str):
             data_dict["pmn_hidden_v"] = await resolve_func_hidden(plugin, hidden)
-        return cls(**data_dict)
+        ins = cls(**data_dict)
+        ins.casefold_func = data.casefold_func
+        ins.func_pinyin = data.func_pinyin
+        return ins
 
 
 class PMNDataRaw(BaseModel):
@@ -96,7 +148,11 @@ class PMNPluginExtra(BaseModel):
     pmn: Optional[PMNDataRaw] = None
 
     @model_validator(mode="before")
-    def normalize_input(cls, values: dict[str, Any]):  # noqa: N805
+    def normalize_input(cls, values: Any):  # noqa: N805
+        if isinstance(values, PMNPluginExtra):
+            values = type_dump_python(values, exclude_unset=True)
+        if not isinstance(values, dict):
+            raise TypeError(f"Expected dict, got {type(values)}")
         should_normalize_keys = {x for x in values if x.lower() in {"author"}}
         for key in should_normalize_keys:
             value = values[key]
@@ -107,7 +163,6 @@ class PMNPluginExtra(BaseModel):
 
 class PMNPluginInfoRaw(BaseModel):
     name: str
-    name_pinyin: str
     author: Optional[str] = None
     version: Optional[str] = None
     description: Optional[str] = None
@@ -117,13 +172,13 @@ class PMNPluginInfoRaw(BaseModel):
 
     _resolved_pm_data: Optional[list[PMDataItem]] = PrivateAttr(None)
 
-    @model_validator(mode="before")
-    def init_name_pinyin(cls, values: dict[str, Any]):  # noqa: N805
-        if isinstance((name := values.get("name")), str) and (
-            not values.get("name_pinyin")
-        ):
-            values["name_pinyin"] = transform_to_pinyin(name)
-        return values
+    @cached_property
+    def casefold_name(self) -> str:
+        return self.name.casefold()
+
+    @cached_property
+    def name_pinyin(self) -> TextChunkList:
+        return TextChunkList.from_raw(self.name)
 
     async def resolve_pm_data(self, plugin: Plugin):
         if self._resolved_pm_data is not None:
@@ -177,16 +232,22 @@ class PMNPluginInfo(PMNPluginInfoRaw):
 
         await asyncio.gather(*tasks)
         ins = cls(**data_dict)
-        ins.plugin = plugin
+        ins.casefold_name = data.casefold_name
+        ins.name_pinyin = data.name_pinyin
         return ins
 
 
+def normalize_replace(name: str) -> str:
+    return name.replace("-", " ").replace("_", " ").replace(".", " ").replace(":", " ")
+
+
 def normalize_plugin_name(name: str) -> str:
-    if pfx := next(
-        (x for x in ("nonebot_plugin_", "nonebot-plugin-") if name.startswith(x)),
-        None,
-    ):
-        name = name[len(pfx) :].replace("_", " ").title()
+    if m := full_pkg_name_re.match(name):
+        name = m["name"]
+    if pkg_name_re.match(name):
+        name = normalize_replace(name)
+    if name[0].isascii() and name.islower():
+        name = name.title()
     return name
 
 
@@ -204,13 +265,7 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
         with warning_suppress(f"Failed to parse plugin metadata of {plugin.id_}"):
             extra = type_validate_python(PMNPluginExtra, meta.extra)
 
-    name = (
-        normalize_plugin_name(meta.name)
-        if meta
-        else normalize_plugin_name(
-            plugin.id_.replace(".", " ").replace(":", " "),
-        ).title()
-    )
+    name = normalize_plugin_name(meta.name if meta else plugin.id_)
 
     _dist = ...
 
@@ -256,33 +311,12 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
     logger.debug(f"Completed to get info of plugin {plugin.id_}")
     return PMNPluginInfoRaw(
         name=name,
-        name_pinyin="",  # avoid type error
         author=author,
         version=ver,
         description=description,
         usage=meta.usage if meta else None,
         pm_data=extra.menu_data if extra else None,
         pmn=pmn,
-    )
-
-
-class _NotCHNStr(str):  # noqa: SLOT000
-    pass
-
-
-def pinyin_sorter_k(text: str):
-    return tuple(
-        (
-            is_pinyin := not isinstance((x := v[0]), _NotCHNStr),
-            x[:-1] if is_pinyin else x,
-            int(x[-1]) if is_pinyin else 0,
-        )
-        for v in pinyin(
-            jieba.lcut(text),
-            style=Style.TONE3,
-            errors=lambda x: _NotCHNStr(x),
-            neutral_tone_with_five=True,
-        )
     )
 
 
@@ -296,19 +330,8 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
     )
     infos = [x for x in infos if x]
     logger.success(f"Collected {len(infos)} plugin infos")
-    infos.sort(key=lambda x: x.name.casefold())
+    infos.sort(key=lambda x: x.name_pinyin.casefold_str)
     return infos
-
-
-def transform_to_pinyin(text: str) -> str:
-    return " ".join(
-        v[0]
-        for v in pinyin(
-            jieba.lcut(text),
-            style=Style.TONE3,
-            neutral_tone_with_five=True,
-        )
-    )
 
 
 _infos: list[PMNPluginInfoRaw] = []
