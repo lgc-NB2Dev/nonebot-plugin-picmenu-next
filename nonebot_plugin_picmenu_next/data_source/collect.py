@@ -79,7 +79,7 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
         pmn = PMNDataRaw(hidden=True)
 
     logger.debug(f"Completed to get info of plugin {plugin.id_}")
-    return PMNPluginInfoRaw(
+    obj = PMNPluginInfoRaw(
         name=name,
         author=author,
         version=ver,
@@ -88,6 +88,8 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfoRaw:
         pm_data=extra.menu_data if extra else None,
         pmn=pmn,
     )
+    obj.plugin = plugin
+    return obj
 
 
 async def collect_plugin_infos(plugins: Iterable[Plugin]):

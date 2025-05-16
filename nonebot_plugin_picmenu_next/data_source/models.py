@@ -46,13 +46,13 @@ class PMDataItemRaw(BaseModel):
 
 
 class PMDataItem(PMDataItemRaw):
-    pmn_hidden_v: bool = False
+    hidden: bool = Field(default=False, alias="pmn_hidden")  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @classmethod
     async def resolve(cls, plugin: Plugin, data: PMDataItemRaw) -> Self:
         data_dict: dict = type_dump_python(data, exclude_unset=True)
         if isinstance((hidden := data_dict.get("pmn_hidden")), str):
-            data_dict["pmn_hidden_v"] = await resolve_func_hidden(plugin, hidden)
+            data_dict["pmn_hidden"] = await resolve_func_hidden(plugin, hidden)
         ins = cls(**data_dict)
         ins.casefold_func = data.casefold_func
         ins.func_pinyin = data.func_pinyin
@@ -66,13 +66,13 @@ class PMNDataRaw(BaseModel):
 
 
 class PMNData(PMNDataRaw):
-    hidden_v: bool = False
+    hidden: bool = False  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @classmethod
     async def resolve(cls, plugin: Plugin, data: PMNDataRaw) -> Self:
         data_dict: dict = type_dump_python(data, exclude_unset=True)
         if isinstance((hidden := data_dict.get("hidden")), str):
-            data_dict["hidden_v"] = await resolve_func_hidden(plugin, hidden)
+            data_dict["hidden"] = await resolve_func_hidden(plugin, hidden)
         return cls(**data_dict)
 
 
@@ -156,7 +156,7 @@ class PMNPluginInfoRaw(BaseModel):
 
 
 class PMNPluginInfo(PMNPluginInfoRaw):
-    pmn_v: PMNData = PMNData()
+    pmn: PMNData = PMNData()  # pyright: ignore[reportIncompatibleVariableOverride]
 
     @classmethod
     async def resolve(
@@ -178,12 +178,14 @@ class PMNPluginInfo(PMNPluginInfoRaw):
                     f"Failed to resolve PicMenu Next data of {plugin.id_}",
                 ):
                     v = await PMNData.resolve(plugin, pmn)
-                data_dict["pmn_v"] = v
+                data_dict["pmn"] = v
 
             tasks.append(_t())
 
         await asyncio.gather(*tasks)
+
         ins = cls(**data_dict)
         ins.casefold_name = data.casefold_name
         ins.name_pinyin = data.name_pinyin
+        ins.plugin = plugin
         return ins

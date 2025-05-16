@@ -18,9 +18,12 @@
   --font-color-card-index: #3336;
   --text-shadow-card-index: 0 0 4px #3331;
 
-  --title-deco-color: #8174a0;
+  --accent-color: #8174a0;
+  --decent-color: #6663;
 
   --font-family-main: 'HarmonyOS Sans SC';
+  --font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code',
+    'Source Code Pro', 'Courier New', 'Courier';
 }
 
 * {
@@ -52,12 +55,22 @@ h6.deco::before {
   margin-left: 2px;
   margin-right: 6px;
   border-radius: 9999px;
-  background-color: var(--title-deco-color);
+  background-color: var(--accent-color);
   box-shadow: var(--text-shadow);
 }
 
 .sub {
   color: var(--font-color-sub);
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+code,
+pre {
+  font-family: var(--font-family-monospace), var(--font-family-main), monospace;
 }
 
 main {
@@ -68,7 +81,7 @@ main {
   background-repeat: no-repeat;
 
   color: var(--font-color-main);
-  font-family: var(--font-family-main), sans-serif;
+  font-family: var(--font-family-main), system-ui, sans-serif;
   text-shadow: var(--text-shadow);
 
   overflow: hidden;
@@ -136,4 +149,82 @@ main > .main-wrapper {
 
 .card .index > .no {
   font-size: 24px;
+}
+
+/* Markdown */
+
+.md h1,
+.md h2,
+.md h3,
+.md h4,
+.md h5,
+.md h6,
+.md p {
+  margin: revert;
+  padding: revert;
+}
+
+.md > :nth-child(1) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.md > :nth-last-child(1) {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.md img {
+  max-width: 100%;
+}
+
+.md :not(pre) code,
+.md pre {
+  background-image: var(--card-background-image);
+  background-color: var(--card-background-color);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.md :not(pre) code {
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.md blockquote {
+  border-left: 4px solid var(--decent-color);
+  margin-left: 0;
+  padding-left: 1em;
+  color: var(--font-color-sub);
+}
+
+.md hr {
+  color: var(--font-color-sub);
+  opacity: 0.5;
+}
+
+.md table {
+  border-collapse: collapse;
+  border: 1px solid var(--decent-color);
+  max-width: 100%;
+}
+
+.md table:not(:has(thead)) tbody > :nth-child(odd),
+.md table:has(thead) tbody > :nth-child(even),
+.md table thead {
+  background-color: var(--decent-color);
+}
+
+.md table th,
+.md table td {
+  padding: 8px;
+  border: 1px solid var(--decent-color);
+}
+
+.md .math.block {
+  text-align: center;
+}
+
+.md .contains-task-list .task-list-item-checkbox {
+  accent-color: var(--accent-color);
 }

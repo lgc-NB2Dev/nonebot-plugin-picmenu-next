@@ -143,7 +143,7 @@ async def _(
 ):
     infos = await get_resolved_infos()
     if not q_show_hidden.result:
-        infos = [x for x in infos if not x.pmn_v.hidden]
+        infos = [x for x in infos if not x.pmn.hidden]
 
     if not q_plugin.result:
         m = await index_templates.get()(infos)

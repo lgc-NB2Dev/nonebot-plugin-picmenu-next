@@ -1,5 +1,7 @@
 {%- extends "base.html.jinja" -%}
 
+{% set is_md = info.pmn.markdown -%}
+
 {%- block head -%}
 <link rel="stylesheet" href="./css/detail.css" />
 {%- endblock -%}
@@ -12,31 +14,31 @@
 {% if func -%}
 <div class="inner-flex">
   <h2 class="deco">触发条件</h2>
-  <div class="card">{{ func.trigger_method | safe_layout }}</div>
+  <div class="card md">{{ func.trigger_method | layout(is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">触发方式</h2>
-  <div class="card">{{ func.trigger_condition | safe_layout }}</div>
+  <div class="card md">{{ func.trigger_condition | layout(is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">简要介绍</h2>
-  <div class="card">{{ func.brief_des | safe_layout }}</div>
+  <div class="card md">{{ func.brief_des | layout(is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">详细用法</h2>
-  <div class="card">{{ func.detail_des | safe_layout }}</div>
+  <div class="card md">{{ func.detail_des | layout(is_md) }}</div>
 </div>
 {% else -%}
 {% if info.description -%}
 <div class="inner-flex">
   <h2 class="deco">简介</h2>
-  <div class="card">{{ info.description | safe_layout }}</div>
+  <div class="card md">{{ info.description | layout(is_md) }}</div>
 </div>
 {% endif -%}
 {% if info.usage -%}
 <div class="inner-flex">
   <h2 class="deco">用法</h2>
-  <div class="card">{{ info.usage | safe_layout }}</div>
+  <div class="card md">{{ info.usage | layout(is_md) }}</div>
 </div>
 {% endif -%}
 {% if info.pm_data -%}
@@ -50,11 +52,11 @@
     <div class="card flex relative">
       <div class="index"><span class="no">No.</span>{{ loop.index }}</div>
       <h3>{{ x.func }}</h3>
-      <p>
-        触发条件：{{ x.trigger_method | safe_layout }}<br />
-        触发方式：{{ x.trigger_condition | safe_layout }}<br />
-        {{ x.brief_des | safe_layout }}
-      </p>
+      <div>
+        <p>触发条件：{{ x.trigger_method | layout(is_md) }}</p>
+        <p>触发方式：{{ x.trigger_condition | layout(is_md) }}</p>
+        <div class="md">{{ x.brief_des | layout(is_md) }}</div>
+      </div>
     </div>
     {% endfor -%}
   </div>

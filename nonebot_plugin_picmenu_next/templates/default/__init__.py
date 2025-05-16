@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 import jinja2 as jj
 from cookit import DebugFileWriter
-from cookit.jinja import register_all_filters
 from cookit.pw import RouterGroup, make_real_path_router, screenshot_html
 from cookit.pw.loguru import log_router_err
 from cookit.pyd import model_with_alias_generator
@@ -16,7 +15,7 @@ from pydantic import BaseModel, Field
 from ...config import version
 from ...data_source.models import PMDataItem, PMNPluginInfo
 from .. import detail_templates, func_detail_templates, index_templates
-from ..pw_utils import ROUTE_BASE_URL, base_routers
+from ..pw_utils import ROUTE_BASE_URL, base_routers, register_filters
 
 if TYPE_CHECKING:
     from yarl import URL
@@ -27,6 +26,7 @@ class TemplateConfigModel(BaseModel):
     command_start: set[str] = Field(alias="command_start")
 
     dark: bool = False
+    enable_builtin_code_css: bool = True
     additional_css: list[str] = []
     additional_js: list[str] = []
 
@@ -44,7 +44,7 @@ jj_env = jj.Environment(
     autoescape=True,
     enable_async=True,
 )
-register_all_filters(jj_env)
+register_filters(jj_env)
 
 debug = DebugFileWriter(Path.cwd() / "debug", "picmenu-next", "default")
 
