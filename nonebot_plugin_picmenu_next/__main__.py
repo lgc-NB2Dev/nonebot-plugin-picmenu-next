@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from contextlib import suppress
 from typing import Optional, TypeVar
 
 from arclet.alconna import Alconna, Arg, Args, CommandMeta, Option, store_true
@@ -9,9 +8,9 @@ from nonebot_plugin_alconna.uniseg import UniMessage
 from thefuzz import process
 
 from .data_source import (
+    PinyinChunkSequence,
     PMDataItem,
     PMNPluginInfo,
-    TextChunkSequence,
     get_resolved_infos,
 )
 from .templates import detail_templates, func_detail_templates, index_templates
@@ -49,21 +48,24 @@ def get_name_similarities(
     raw_weight: float = 0.6,
     pinyin_weight: float = 0.4,
 ) -> list[float]:
-    similarities: list[float] = []
-    raw_iter = process.extractWithoutOrder(query, choices)
-    pinyin_iter = process.extractWithoutOrder(query_pinyin, choices_pinyin)
-    with suppress(StopIteration):
-        while True:
-            raw_score = next(raw_iter)[1]
-            pinyin_score = next(pinyin_iter)[1]
-            similarities.append(raw_weight * raw_score + pinyin_weight * pinyin_score)
+    raw_scores = [x[1] for x in process.extractWithoutOrder(query, choices)]
+    pinyin_scores = [
+        x[1] for x in process.extractWithoutOrder(query_pinyin, choices_pinyin)
+    ]
+    similarities = [
+        raw_weight * raw + pinyin_weight * pinyin
+        for raw, pinyin in zip(raw_scores, pinyin_scores)
+    ]
     logger.opt(lazy=True).debug(
-        "Query: {}, similarities: {}",
-        lambda: query,
-        lambda: "; ".join(
-            f"{choices[i]}: {s}"
-            for i, s in sorted(
-                enumerate(similarities),
+        "Query: {}, similarities:\n{}",
+        lambda: f"{query} ({query_pinyin})",
+        lambda: ";\n".join(
+            (
+                f"{choices[i]} ({choices_pinyin[i]})"
+                f": ({raw} * {raw_weight}) + ({pin} * {pinyin_weight}) = {sim}"
+            )
+            for i, (raw, pin, sim) in sorted(
+                enumerate(zip(raw_scores, pinyin_scores, similarities)),
                 key=lambda x: x[1],
                 reverse=True,
             )
@@ -101,7 +103,7 @@ async def query_plugin(
 
     similarities = get_name_similarities(
         query.casefold(),
-        TextChunkSequence.from_raw(query).casefold_str,
+        PinyinChunkSequence.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )
@@ -127,7 +129,7 @@ async def query_func_detail(
 
     similarities = get_name_similarities(
         query.casefold(),
-        TextChunkSequence.from_raw(query).casefold_str,
+        PinyinChunkSequence.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )
