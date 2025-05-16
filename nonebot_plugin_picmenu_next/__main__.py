@@ -11,7 +11,7 @@ from thefuzz import process
 from .data_source import (
     PMDataItem,
     PMNPluginInfo,
-    TextChunkList,
+    TextChunkSequence,
     get_resolved_infos,
 )
 from .templates import detail_templates, func_detail_templates, index_templates
@@ -101,7 +101,7 @@ async def query_plugin(
 
     similarities = get_name_similarities(
         query.casefold(),
-        TextChunkList.from_raw(query).casefold_str,
+        TextChunkSequence.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )
@@ -127,7 +127,7 @@ async def query_func_detail(
 
     similarities = get_name_similarities(
         query.casefold(),
-        TextChunkList.from_raw(query).casefold_str,
+        TextChunkSequence.from_raw(query).casefold_str,
         choices,
         choices_pinyin,
     )

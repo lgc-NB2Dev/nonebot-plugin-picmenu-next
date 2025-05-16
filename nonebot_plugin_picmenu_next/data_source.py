@@ -2,11 +2,11 @@ import asyncio
 import importlib
 import re
 from asyncio import iscoroutinefunction
-from collections.abc import Awaitable, Iterable
+from collections.abc import Awaitable, Iterable, Iterator, Sequence
 from functools import cached_property
 from importlib.metadata import Distribution, distribution
-from typing import Any, NamedTuple, Optional, Union
-from typing_extensions import Self
+from typing import Any, NamedTuple, Optional, Union, overload
+from typing_extensions import Self, override
 from weakref import ref
 
 import jieba
@@ -69,8 +69,9 @@ class TextChunk(NamedTuple):
         return f"{self.text}{self.tone}" if self.is_pinyin else self.text
 
 
-class TextChunkList(tuple[TextChunk]):
-    __slots__ = ()
+class TextChunkSequence(Sequence[TextChunk]):
+    def __init__(self, iterable: Optional[Iterable[TextChunk]] = None):
+        self.chunks = tuple(iterable) if iterable else ()
 
     @classmethod
     def from_raw(cls, text: str) -> Self:
@@ -89,6 +90,33 @@ class TextChunkList(tuple[TextChunk]):
     def __str__(self):
         return " ".join(str(x) for x in self)
 
+    def __lt__(self, other: object):
+        return self.chunks.__lt__(other)  # type: ignore
+
+    def __gt__(self, other: object):
+        return self.chunks.__gt__(other)  # type: ignore
+
+    def __eq__(self, other: object):
+        return self.chunks.__eq__(other)  # type: ignore
+
+    @override
+    def __iter__(self) -> Iterator[TextChunk]:
+        return self.chunks.__iter__()
+
+    @override
+    def __len__(self) -> int:
+        return self.chunks.__len__()
+
+    @overload
+    def __getitem__(self, index: int) -> TextChunk: ...
+    @overload
+    def __getitem__(self, index: slice) -> Self: ...
+    @override
+    def __getitem__(self, index: Union[int, slice]):
+        if isinstance(index, slice):
+            return type(self)(self.chunks[index])
+        return self.chunks[index]
+
 
 class PMDataItemRaw(BaseModel):
     func: str
@@ -106,8 +134,8 @@ class PMDataItemRaw(BaseModel):
         return self.func.casefold()
 
     @cached_property
-    def func_pinyin(self) -> TextChunkList:
-        return TextChunkList.from_raw(self.func)
+    def func_pinyin(self) -> TextChunkSequence:
+        return TextChunkSequence.from_raw(self.func)
 
 
 class PMDataItem(PMDataItemRaw):
@@ -177,8 +205,8 @@ class PMNPluginInfoRaw(BaseModel):
         return self.name.casefold()
 
     @cached_property
-    def name_pinyin(self) -> TextChunkList:
-        return TextChunkList.from_raw(self.name)
+    def name_pinyin(self) -> TextChunkSequence:
+        return TextChunkSequence.from_raw(self.name)
 
     async def resolve_pm_data(self, plugin: Plugin):
         if self._resolved_pm_data is not None:
@@ -330,7 +358,7 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
     )
     infos = [x for x in infos if x]
     logger.success(f"Collected {len(infos)} plugin infos")
-    infos.sort(key=lambda x: x.name_pinyin.casefold_str)
+    infos.sort(key=lambda x: x.name_pinyin)
     return infos
 
 
