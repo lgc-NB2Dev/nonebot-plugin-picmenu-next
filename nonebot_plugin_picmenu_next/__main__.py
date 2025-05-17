@@ -151,9 +151,9 @@ async def _(
     q_function: Query[Optional[str]] = Query("~function", None),
     q_show_hidden: Query[bool] = Query("~show-hidden.value", default=False),
 ):
-    is_hidden = q_show_hidden.result
+    show_hidden = q_show_hidden.result
     if (
-        is_hidden
+        show_hidden
         and config.only_superuser_show_hidden
         and (not await SUPERUSER(bot, ev))
     ):
@@ -164,11 +164,11 @@ async def _(
         )
 
     infos = await resolve_main_mixin(get_infos())
-    if is_hidden:
+    if not show_hidden:
         infos = [x for x in infos if not x.pmn.hidden]
 
     if not q_plugin.result:
-        m = await index_templates.get()(infos, is_hidden)
+        m = await index_templates.get()(infos, show_hidden)
         await m.finish()
 
     r = await query_plugin(infos, q_plugin.result)
@@ -178,12 +178,12 @@ async def _(
     if not q_function.result:
         m = await detail_templates.get(
             info.pmn.template,
-        )(info, info_index, is_hidden)
+        )(info, info_index, show_hidden)
         await m.finish()
 
     info = await resolve_detail_mixin(info)
     pm_data = info.pm_data
-    if pm_data and is_hidden:
+    if pm_data and (not show_hidden):
         pm_data = [x for x in pm_data if not x.hidden]
 
     if not pm_data:
@@ -199,5 +199,5 @@ async def _(
     func_index, func = r
     m = await func_detail_templates.get(
         func.template,
-    )(info, info_index, func, func_index, is_hidden)
+    )(info, info_index, func, func_index, show_hidden)
     await m.finish()

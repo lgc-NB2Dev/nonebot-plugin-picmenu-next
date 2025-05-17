@@ -163,6 +163,8 @@ async def resolve_main_mixin(infos: list[PMNPluginInfo]):
     if not infos:
         return infos
 
+    infos = infos.copy()
+
     if plugin_mixins.data:
 
         async def last_external_mixin(infos: list[PMNPluginInfo]):
@@ -176,7 +178,7 @@ async def resolve_main_mixin(infos: list[PMNPluginInfo]):
 
     for i in range(len(infos)):
         x = infos[i]
-        if x.plugin_id not in self_mixins:
+        if (not x.plugin_id) or (x.plugin_id not in self_mixins):
             continue
 
         async def last_mixin(info: PMNPluginInfo):
@@ -202,7 +204,7 @@ async def resolve_detail_mixin(info: PMNPluginInfo):
         )
         info = await mixin_chain(info)
 
-    if info.plugin_id in self_detail_mixins:
+    if info.plugin_id and info.plugin_id in self_detail_mixins:
         mixin_chain = chain_mixins(
             self_detail_mixins[info.plugin_id].data,
             last_mixin,

@@ -60,8 +60,8 @@ class PMNPluginExtra(BaseModel):
 
 
 class PMNPluginInfo(BaseModel):
-    plugin_id: str
     name: str
+    plugin_id: Optional[str] = None
     author: Optional[str] = None
     version: Optional[str] = None
     description: Optional[str] = None
@@ -90,4 +90,4 @@ class PMNPluginInfo(BaseModel):
 
     @property
     def plugin(self) -> Optional[Plugin]:
-        return get_plugin(self.plugin_id)
+        return get_plugin(self.plugin_id) if self.plugin_id else None
