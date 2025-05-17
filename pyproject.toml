@@ -6,12 +6,13 @@ authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.4.1",
     "nonebot-plugin-alconna>=0.54.2",
-    "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.11.6",
+    "cookit[jinja,loguru,nonebot-alconna,pw,pyd]>=0.11.6",
     "pypinyin>=0.54.0",
     "jieba>=0.42.1",
     "thefuzz>=0.22.1",
     "markdown-it-py[plugins]>=3.0.0",
     "pygments>=2.19.1",
+    "nonebot-plugin-htmlrender>=0.6.5",
 ]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from cookit.jinja import cookit_global_filter
 from cookit.jinja.filters import br, safe_layout, space
-from cookit.loguru.common import warning_suppress
+from cookit.loguru import warning_suppress
 from cookit.pw import RouterGroup, make_real_path_router
 from cookit.pw.loguru import log_router_err
 from markdown_it import MarkdownIt

@@ -5,7 +5,7 @@ from typing import Any, Callable, Generic, Optional, TypeVar
 from typing_extensions import Concatenate, ParamSpec, TypeAlias
 
 from cookit import DecoListCollector
-from cookit.loguru.common import warning_suppress
+from cookit.loguru import warning_suppress
 from nonebot.matcher import MatcherSource
 from nonebot.plugin.on import get_matcher_source
 
