@@ -77,23 +77,32 @@ async def render(template: str, routers: RouterGroup, **kwargs):
 
 
 @index_templates("default")
-async def render_index(infos: list[PMNPluginInfo]) -> UniMessage:
+async def render_index(
+    infos: list[PMNPluginInfo],
+    is_hidden: bool,
+) -> UniMessage:
     routers = base_routers.copy()
     return await render(
         "index.html.jinja",
         routers,
         infos=infos,
+        is_hidden=is_hidden,
     )
 
 
 @detail_templates("default")
-async def render_detail(info: PMNPluginInfo, info_index: int) -> UniMessage:
+async def render_detail(
+    info: PMNPluginInfo,
+    info_index: int,
+    is_hidden: bool,
+) -> UniMessage:
     routers = base_routers.copy()
     return await render(
         "detail.html.jinja",
         routers,
         info=info,
         info_index=info_index,
+        is_hidden=is_hidden,
     )
 
 
@@ -103,6 +112,7 @@ async def render_func_detail(
     info_index: int,
     func: PMDataItem,
     func_index: int,
+    is_hidden: bool,
 ) -> UniMessage:
     routers = base_routers.copy()
     return await render(
@@ -112,4 +122,5 @@ async def render_func_detail(
         info_index=info_index,
         func=func,
         func_index=func_index,
+        is_hidden=is_hidden,
     )

@@ -45,7 +45,11 @@
 <div class="inner-flex">
   <div>
     <h2 class="deco">功能</h2>
-    <p>发送 <b>菜单 {{ info_index + 1 }} 功能名称或序号</b> 获取某功能详细信息</p>
+    <p>
+      发送
+      <b>{{ cfg.pfx }}帮助{% if is_hidden %} -H{% endif %} {{ info_index + 1 }} 功能名称或序号</b>
+      获取关于某插件的更多信息
+    </p>
   </div>
   <div class="card-grid functions">
     {% for x in info.pm_data -%}

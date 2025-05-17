@@ -1,7 +1,6 @@
-from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import NamedTuple, Optional, Union, overload
-from typing_extensions import Self, override
+from typing import NamedTuple
+from typing_extensions import Self
 
 import jieba
 from pypinyin import Style, pinyin
@@ -33,10 +32,7 @@ class PinyinChunk(NamedTuple):
         return f"{self.text}{self.tone}" if self.is_pinyin else self.text
 
 
-class PinyinChunkSequence(Sequence[PinyinChunk]):
-    def __init__(self, iterable: Optional[Iterable[PinyinChunk]] = None):
-        self.chunks: tuple[PinyinChunk, ...] = tuple(iterable) if iterable else ()
-
+class PinyinChunkSequence(list[PinyinChunk]):
     @classmethod
     def from_raw(cls, text: str) -> Self:
         transformed = pinyin(
@@ -53,34 +49,3 @@ class PinyinChunkSequence(Sequence[PinyinChunk]):
 
     def __str__(self):
         return " ".join(str(x) for x in self)
-
-    def __lt__(self, other: "PinyinChunkSequence"):
-        return self.chunks.__lt__(other.chunks)
-
-    def __gt__(self, other: "PinyinChunkSequence"):
-        return self.chunks.__gt__(other.chunks)
-
-    def __eq__(self, other: object):
-        return (
-            self.chunks.__eq__(other.chunks)
-            if isinstance(other, PinyinChunkSequence)
-            else NotImplemented
-        )
-
-    @override
-    def __iter__(self) -> Iterator[PinyinChunk]:
-        return self.chunks.__iter__()
-
-    @override
-    def __len__(self) -> int:
-        return self.chunks.__len__()
-
-    @overload
-    def __getitem__(self, index: int) -> PinyinChunk: ...
-    @overload
-    def __getitem__(self, index: slice) -> Self: ...
-    @override
-    def __getitem__(self, index: Union[int, slice]):
-        if isinstance(index, slice):
-            return type(self)(self.chunks[index])
-        return self.chunks[index]

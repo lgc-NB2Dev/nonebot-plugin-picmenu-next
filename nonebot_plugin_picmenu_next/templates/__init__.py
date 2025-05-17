@@ -12,11 +12,20 @@ TN = TypeVar("TN", bound=HasNameProtocol)
 
 
 class IndexTemplateHandler(HasNameProtocol, Protocol):
-    async def __call__(self, infos: list[PMNPluginInfo]) -> UniMessage: ...
+    async def __call__(
+        self,
+        infos: list[PMNPluginInfo],
+        is_hidden: bool,
+    ) -> UniMessage: ...
 
 
 class DetailTemplateHandler(HasNameProtocol, Protocol):
-    async def __call__(self, info: PMNPluginInfo, info_index: int) -> UniMessage: ...
+    async def __call__(
+        self,
+        info: PMNPluginInfo,
+        info_index: int,
+        is_hidden: bool,
+    ) -> UniMessage: ...
 
 
 class FuncDetailTemplateHandler(HasNameProtocol, Protocol):
@@ -26,6 +35,7 @@ class FuncDetailTemplateHandler(HasNameProtocol, Protocol):
         info_index: int,
         func: PMDataItem,
         func_index: int,
+        is_hidden: bool,
     ) -> UniMessage: ...
 
 

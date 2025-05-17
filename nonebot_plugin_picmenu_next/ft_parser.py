@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from html import escape
 from typing import Any, Optional, Union
-from typing_extensions import Never, TypeAlias
+from typing_extensions import TypeAlias
 
 ColorType: TypeAlias = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
 
@@ -105,23 +105,22 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
     k_ch_re = re.compile(r"[a-zA-Z0-9_-]")
 
     state: ParsingState = ParsingState.GETTING_KEY
-    value_quote_next_char = False
+    value_escape_next_char = False
     curr_key_buf: list[str] = []
+    curr_key_start_index = 0
     curr_quote = ""
+    curr_quote_index = 0
     curr_value_buf: list[str] = []
 
-    def raise_char_err(i: int, char: str) -> Never:
-        raise ValueError(
-            f"Invalid char {char} found at pos {i} when parsing key",
-        )
-
     def resolve_current():
-        nonlocal state, curr_quote
+        nonlocal state, curr_quote, curr_quote_index, curr_key_start_index
         key = "".join(curr_key_buf)
         value = "".join(curr_value_buf)
         curr_key_buf.clear()
+        curr_key_start_index = 0
         curr_value_buf.clear()
         curr_quote = ""
+        curr_quote_index = 0
         state = ParsingState.GETTING_KEY
         resolved_attrs[key] = resolve_attr(key, value)
 
@@ -136,34 +135,37 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
                 if curr_key_buf and curr_key_buf[-1].isspace():
                     curr_key_buf.pop()
                 if not curr_key_buf:
-                    raise_char_err(i, char)
+                    raise ValueError(f"Expected key, got char {char} at index {i}")
                 state = ParsingState.GETTING_QUOTE_OR_VALUE
                 continue
 
             if (curr_key_buf and curr_key_buf[-1].isspace()) or (
                 not (k_ch_re if curr_key_buf else k_1st_ch_re).match(char)
             ):
-                raise_char_err(i, char)
+                raise ValueError(f"Invalid char {char} found at index {i} in key")
+
             curr_key_buf.append(char)
+            curr_key_start_index = i
 
         elif state is ParsingState.GETTING_QUOTE_OR_VALUE:
             if char.isspace():
                 continue
             if char in {"'", '"'}:
                 curr_quote = char
+                curr_quote_index = i
             else:
                 curr_value_buf.append(char)
             state = ParsingState.GETTING_VALUE
 
         elif state is ParsingState.GETTING_VALUE:
-            if value_quote_next_char:
-                value_quote_next_char = False
+            if value_escape_next_char:
+                value_escape_next_char = False
                 curr_value_buf.append(char)
                 continue
 
             if curr_quote:
                 if char == "\\":
-                    value_quote_next_char = True
+                    value_escape_next_char = True
                 elif char == curr_quote:
                     resolve_current()
                 else:
@@ -173,7 +175,7 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
             if char.isspace():
                 resolve_current()
             elif char == "=":
-                raise_char_err(i, char)
+                raise ValueError(f"Unexpected char {char} found at index {i} in value")
             else:
                 curr_value_buf.append(char)
 
@@ -181,9 +183,14 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
         resolve_current()
 
     if curr_key_buf:
-        raise ValueError(f"Unterminated key: {''.join(curr_key_buf)}")
+        raise ValueError(
+            f"Unterminated key `{''.join(curr_key_buf)}` found"
+            f" starting at index {curr_key_start_index}",
+        )
     if curr_quote:
-        raise ValueError("Unterminated quote")
+        raise ValueError(
+            f"Unterminated quote {curr_quote} starting at index {curr_quote_index}",
+        )
 
     return TextChunk(text=text, **resolved_attrs)
 

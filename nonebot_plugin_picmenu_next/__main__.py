@@ -1,15 +1,23 @@
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Optional, TypeVar
 
 from arclet.alconna import Alconna, Arg, Args, CommandMeta, Option, store_true
 from loguru import logger
+from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
+from nonebot.permission import SUPERUSER
 from nonebot_plugin_alconna import Query, on_alconna
 from nonebot_plugin_alconna.uniseg import UniMessage
 from thefuzz import process
 
-from .data_source import get_resolved_infos
+from .config import config
+from .data_source import get_infos
+from .data_source.mixin import resolve_detail_mixin, resolve_main_mixin
 from .data_source.models import PinyinChunkSequence, PMDataItem, PMNPluginInfo
 from .templates import detail_templates, func_detail_templates, index_templates
+
+RES_DIR = Path(__file__).parent / "res"
+TIP_IMG_PATH = RES_DIR / "gan_shen_me.jpg"
 
 alc = Alconna(
     "help",
@@ -137,16 +145,30 @@ async def query_func_detail(
 
 @m_cls.handle()
 async def _(
+    bot: BaseBot,
+    ev: BaseEvent,
     q_plugin: Query[Optional[str]] = Query("~plugin", None),
     q_function: Query[Optional[str]] = Query("~function", None),
     q_show_hidden: Query[bool] = Query("~show-hidden.value", default=False),
 ):
-    infos = await get_resolved_infos()
-    if not q_show_hidden.result:
+    is_hidden = q_show_hidden.result
+    if (
+        is_hidden
+        and config.only_superuser_show_hidden
+        and (not await SUPERUSER(bot, ev))
+    ):
+        await (
+            UniMessage.image(raw=TIP_IMG_PATH.read_bytes())
+            .text("别想看咱藏起来的东西！")
+            .finish(reply_to=True)
+        )
+
+    infos = await resolve_main_mixin(get_infos())
+    if is_hidden:
         infos = [x for x in infos if not x.pmn.hidden]
 
     if not q_plugin.result:
-        m = await index_templates.get()(infos)
+        m = await index_templates.get()(infos, is_hidden)
         await m.finish()
 
     r = await query_plugin(infos, q_plugin.result)
@@ -154,21 +176,21 @@ async def _(
         await UniMessage.text("好像没有找到对应插件呢……").finish(reply_to=True)
     info_index, info = r
     if not q_function.result:
-        m = await detail_templates.get(info.pmn.template)(info, info_index)
+        m = await detail_templates.get(
+            info.pmn.template,
+        )(info, info_index, is_hidden)
         await m.finish()
 
-    if not info.pm_data:
+    info = await resolve_detail_mixin(info)
+    pm_data = info.pm_data
+    if pm_data and is_hidden:
+        pm_data = [x for x in pm_data if not x.hidden]
+
+    if not pm_data:
         await UniMessage.text(
             f"插件 `{info.name}` 没有详细功能介绍哦",
         ).finish(reply_to=True)
 
-    if (not (plugin := info.plugin)) or (
-        not (pm_data := await info.resolve_pm_data(plugin))
-    ):
-        await UniMessage.text("啊哦，遇到了意外情况……").finish(reply_to=True)
-
-    if not q_show_hidden.result:
-        pm_data = [x for x in pm_data if not x.hidden]
     r = await query_func_detail(pm_data, q_function.result)
     if not r:
         await UniMessage.text(
@@ -177,5 +199,5 @@ async def _(
     func_index, func = r
     m = await func_detail_templates.get(
         func.template,
-    )(info, info_index, func, func_index)
+    )(info, info_index, func, func_index, is_hidden)
     await m.finish()
