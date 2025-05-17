@@ -154,7 +154,7 @@ async def _(
     show_hidden = q_show_hidden.result
     if (
         show_hidden
-        and config.only_superuser_show_hidden
+        and config.only_superuser_see_hidden
         and (not await SUPERUSER(bot, ev))
     ):
         await (

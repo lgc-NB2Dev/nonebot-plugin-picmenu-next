@@ -12,6 +12,7 @@ from nonebot import logger
 from nonebot.plugin import Plugin
 
 from ..utils import normalize_plugin_name
+from .mixin import chain_mixins, plugin_collect_mixins
 from .models import PMNData, PMNPluginExtra, PMNPluginInfo
 
 
@@ -77,7 +78,11 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfo:
     description = (
         meta.description
         if meta
-        else (dist.metadata.get("Summary") if (dist := get_dist()) else None)
+        else (
+            dist.metadata.get("Summary")
+            if (dist := get_dist(plugin.module_name))
+            else None
+        )
     )
 
     pmn = (extra.pmn if extra else None) or PMNData()
@@ -106,6 +111,13 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
         *(_get(plugin) for plugin in plugins),
     )
     infos = [x for x in infos if x]
+
+    async def final_mixin(infos: list[PMNPluginInfo]):
+        return infos
+
+    mixin_chain = chain_mixins(plugin_collect_mixins.data, final_mixin)
+    infos = await mixin_chain(infos)
+
     infos.sort(key=lambda x: x.name_pinyin)
     logger.success(f"Collected {len(infos)} plugin infos")
 

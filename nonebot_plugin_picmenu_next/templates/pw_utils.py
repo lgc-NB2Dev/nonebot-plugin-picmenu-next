@@ -73,7 +73,7 @@ def layout(value: str, is_md: bool = False):
     if "<ft" in value and "</ft>" in value:
         with warning_suppress("Failed to parse PicMenu format rich text"):
             txt = transform_ft(value)
-            return Markup(br(space(txt)))  # noqa: S704
+            return Markup(space(br(txt)))  # noqa: S704
 
     return safe_layout(value)
 

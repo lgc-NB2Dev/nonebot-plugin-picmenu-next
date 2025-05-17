@@ -8,7 +8,7 @@ class ConfigModel(BaseModel):
     index_template: str = "default"
     detail_template: str = "default"
     func_detail_template: str = "default"
-    only_superuser_show_hidden: bool = False
+    only_superuser_see_hidden: bool = False
 
 
 config: ConfigModel = get_plugin_config(ConfigModel)

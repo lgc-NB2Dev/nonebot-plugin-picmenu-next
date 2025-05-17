@@ -26,6 +26,15 @@ MixinFunc: TypeAlias = Callable[
     T,
 ]
 
+PluginCollectMixinNext: TypeAlias = Callable[
+    [list[PMNPluginInfo]],
+    Co[list[PMNPluginInfo]],
+]
+PluginCollectMixin: TypeAlias = MixinFunc[
+    [list[PMNPluginInfo]],
+    Co[list[PMNPluginInfo]],
+]
+
 SelfMixinNext: TypeAlias = Callable[
     [PMNPluginInfo],
     Co[PMNPluginInfo],
@@ -101,6 +110,8 @@ class SelfMixinCollector(defaultdict[str, MixinCollector[T]]):
 
         return deco
 
+
+plugin_collect_mixins: MixinCollector[PluginCollectMixin] = MixinCollector()
 
 self_mixins: SelfMixinCollector[SelfMixin] = SelfMixinCollector()
 self_detail_mixins: SelfMixinCollector[PluginDetailMixin] = SelfMixinCollector()
