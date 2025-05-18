@@ -3,8 +3,8 @@ from typing import Any, Optional, TypeVar, Union
 
 from cookit.pyd import (
     PYDANTIC_V2,
+    get_model_with_config,
     model_validator,
-    model_with_model_config,
     type_dump_python,
 )
 from nonebot import get_plugin
@@ -17,16 +17,17 @@ T = TypeVar("T")
 
 
 if PYDANTIC_V2:
-    cp_model_config: ConfigDict = {}
+    CompatModel = BaseModel
 else:
-    cp_model_config: ConfigDict = {
-        "arbitrary_types_allowed": True,
-        "keep_untouched": (cached_property,),
-    }
+    CompatModel = get_model_with_config(
+        {
+            "arbitrary_types_allowed": True,
+            "keep_untouched": (cached_property,),
+        }
+    )
 
 
-@model_with_model_config(cp_model_config)
-class PMDataItem(BaseModel):
+class PMDataItem(CompatModel):
     func: str
     trigger_method: str
     trigger_condition: str
@@ -74,8 +75,7 @@ class PMNPluginExtra(BaseModel):
         return values
 
 
-@model_with_model_config(cp_model_config)
-class PMNPluginInfo(BaseModel):
+class PMNPluginInfo(CompatModel):
     name: str
     plugin_id: Optional[str] = None
     author: Optional[str] = None
