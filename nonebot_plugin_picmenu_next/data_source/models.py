@@ -1,16 +1,31 @@
 from functools import cached_property
 from typing import Any, Optional, TypeVar, Union
 
-from cookit.pyd import model_validator, type_dump_python
+from cookit.pyd import (
+    PYDANTIC_V2,
+    model_validator,
+    model_with_model_config,
+    type_dump_python,
+)
 from nonebot import get_plugin
 from nonebot.plugin import Plugin
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .pinyin import PinyinChunkSequence
 
 T = TypeVar("T")
 
 
+if PYDANTIC_V2:
+    cp_model_config: ConfigDict = {}
+else:
+    cp_model_config: ConfigDict = {
+        "arbitrary_types_allowed": True,
+        "keep_untouched": (cached_property,),
+    }
+
+
+@model_with_model_config(cp_model_config)
 class PMDataItem(BaseModel):
     func: str
     trigger_method: str
@@ -59,6 +74,7 @@ class PMNPluginExtra(BaseModel):
         return values
 
 
+@model_with_model_config(cp_model_config)
 class PMNPluginInfo(BaseModel):
     name: str
     plugin_id: Optional[str] = None
