@@ -22,10 +22,9 @@ import re
 from dataclasses import dataclass
 from enum import Enum, auto
 from html import escape
-from typing import Any, Optional, Union
-from typing_extensions import TypeAlias
+from typing import Any, TypeAlias
 
-ColorType: TypeAlias = Union[str, tuple[int, int, int], tuple[int, int, int, int]]
+ColorType: TypeAlias = str | tuple[int, int, int] | tuple[int, int, int, int]
 
 COLOR_TUPLE_RE = re.compile(r"\(\s*(\d+?,\s*){2,3}(\d+?,?\s*)\)")
 
@@ -39,11 +38,11 @@ def format_color_css(color: ColorType) -> str:
 @dataclass
 class TextChunk:
     text: str
-    fonts: Optional[str] = None
-    size: Optional[int] = None
-    color: Optional[ColorType] = None
-    stroke_width: Optional[int] = None
-    stroke_fill: Optional[ColorType] = None
+    fonts: str | None = None
+    size: int | None = None
+    color: ColorType | None = None
+    stroke_width: int | None = None
+    stroke_fill: ColorType | None = None
 
     @property
     def style_dict(self):

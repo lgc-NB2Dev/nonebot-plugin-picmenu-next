@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from cookit import HasNameProtocol, NameDecoCollector, auto_import
 from nonebot import logger
@@ -44,14 +45,14 @@ class TemplateDecoCollector(NameDecoCollector[TN]):
         self,
         template_type: str,
         template_name_getter: Callable[[], str],
-        data: Optional[dict[str, TN]] = None,
+        data: dict[str, TN] | None = None,
         allow_overwrite: bool = False,
     ) -> None:
         super().__init__(data, allow_overwrite)
         self.template_type = template_type
         self.name_getter = template_name_getter
 
-    def get(self, name: Optional[str] = None) -> TN:
+    def get(self, name: str | None = None) -> TN:
         if name and name not in self.data:
             logger.warning(
                 f"Plugin configured {self.template_type} template '{name}' not found"

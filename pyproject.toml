@@ -4,22 +4,28 @@ dynamic = ["version"]
 description = "Template plugin project"
 authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
 dependencies = [
-    "nonebot2>=2.4.1",
-    "nonebot-plugin-alconna>=0.54.2",
-    "cookit[jinja,loguru,nonebot-alconna,pw,pyd]>=0.11.6",
-    "pypinyin>=0.54.0",
+    "nonebot2>=2.4.3",
+    "nonebot-plugin-alconna>=0.59.4",
+    "nonebot-plugin-localstore>=0.7.4",
+    "cookit[jinja,loguru,nonebot-alconna,nonebot-localstore,pw,pyd]>=0.13.0",
+    "pypinyin>=0.55.0",
     "jieba>=0.42.1",
     "thefuzz>=0.22.1",
-    "markdown-it-py[plugins]>=3.0.0",
-    "pygments>=2.19.1",
-    "nonebot-plugin-htmlrender>=0.6.5",
+    "markdown-it-py[plugins]>=4.0.0",
+    "pygments>=2.19.2",
+    "nonebot-plugin-htmlrender>=0.6.6",
 ]
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
 license = { text = "MIT" }
 
 [project.urls]
 homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picmenu-next"
+
+[project.optional-dependencies]
+yaml = ["ruamel-yaml>=0.18.14"]
+toml = ["tomli>=2.0.1; python_version<'3.11'"]
+all = ["nonebot-plugin-picmenu-next[yaml,toml]"]
 
 [dependency-groups]
 dev = []

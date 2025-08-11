@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from arclet.alconna import Alconna, Arg, Args, CommandMeta, Option, store_true
 from loguru import logger
@@ -81,7 +81,7 @@ def get_name_similarities(
 T = TypeVar("T")
 
 
-def handle_query_index(query: str, infos: Sequence[T]) -> Optional[tuple[int, T]]:
+def handle_query_index(query: str, infos: Sequence[T]) -> tuple[int, T] | None:
     if query.isdigit() and query.strip("0"):
         return (
             ((i := qn - 1), infos[i])
@@ -95,7 +95,7 @@ async def query_plugin(
     infos: list[PMNPluginInfo],
     query: str,
     score_cutoff: float = 60,
-) -> Optional[tuple[int, PMNPluginInfo]]:
+) -> tuple[int, PMNPluginInfo] | None:
     if r := handle_query_index(query, infos):
         return r
 
@@ -121,7 +121,7 @@ async def query_func_detail(
     pm_data: list[PMDataItem],
     query: str,
     score_cutoff: float = 60,
-) -> Optional[tuple[int, PMDataItem]]:
+) -> tuple[int, PMDataItem] | None:
     if r := handle_query_index(query, pm_data):
         return r
 
@@ -147,8 +147,8 @@ async def query_func_detail(
 async def _(
     bot: BaseBot,
     ev: BaseEvent,
-    q_plugin: Query[Optional[str]] = Query("~plugin", None),
-    q_function: Query[Optional[str]] = Query("~function", None),
+    q_plugin: Query[str | None] = Query("~plugin", None),
+    q_function: Query[str | None] = Query("~function", None),
     q_show_hidden: Query[bool] = Query("~show-hidden.value", default=False),
 ):
     show_hidden = q_show_hidden.result
@@ -159,7 +159,7 @@ async def _(
     ):
         await (
             UniMessage.image(raw=TIP_IMG_PATH.read_bytes())
-            .text("别想看咱藏起来的东西！")
+            .text("不是主人不给看")
             .finish(reply_to=True)
         )
 

@@ -1,8 +1,8 @@
 from collections import defaultdict
-from collections.abc import Coroutine, Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Optional, TypeVar
-from typing_extensions import Concatenate, ParamSpec, TypeAlias
+from typing import Any, Concatenate, Generic, TypeAlias, TypeVar
+from typing_extensions import ParamSpec
 
 from cookit import DecoListCollector
 from cookit.loguru import warning_suppress
@@ -67,7 +67,7 @@ PluginDetailMixin: TypeAlias = MixinFunc[
 class MixinInfo(Generic[T]):
     func: T
     priority: int
-    source: Optional[MatcherSource]
+    source: MatcherSource | None
 
 
 class MixinCollector(DecoListCollector[MixinInfo[T]]):
@@ -75,7 +75,7 @@ class MixinCollector(DecoListCollector[MixinInfo[T]]):
         self,
         priority: int = 5,
         _depth: int = 0,
-        _matcher_source: Optional[MatcherSource] = None,
+        _matcher_source: MatcherSource | None = None,
     ):
         def deco(func: T) -> T:
             self.data.append(
@@ -99,7 +99,7 @@ class SelfMixinCollector(defaultdict[str, MixinCollector[T]]):
         self,
         priority: int = 1,
         _depth: int = 0,
-        _matcher_source: Optional[MatcherSource] = None,
+        _matcher_source: MatcherSource | None = None,
     ):
         def deco(f: T) -> T:
             s = _matcher_source or get_matcher_source()

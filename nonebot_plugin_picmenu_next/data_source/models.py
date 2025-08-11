@@ -1,15 +1,17 @@
 from functools import cached_property
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from cookit.pyd import (
     PYDANTIC_V2,
     get_model_with_config,
+    model_copy,
+    model_fields_set,
     model_validator,
     type_dump_python,
 )
 from nonebot import get_plugin
 from nonebot.plugin import Plugin
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from .pinyin import PinyinChunkSequence
 
@@ -23,7 +25,7 @@ else:
         {
             "arbitrary_types_allowed": True,
             "keep_untouched": (cached_property,),
-        }
+        },
     )
 
 
@@ -36,7 +38,7 @@ class PMDataItem(CompatModel):
 
     # extension properties
     hidden: bool = Field(default=False, alias="pmn_hidden")
-    template: Optional[str] = Field(default=None, alias="pmn_template")
+    template: str | None = Field(default=None, alias="pmn_template")
 
     @cached_property
     def casefold_func(self) -> str:
@@ -47,19 +49,19 @@ class PMDataItem(CompatModel):
         return PinyinChunkSequence.from_raw(self.func)
 
 
-class PMNData(BaseModel):
+class PMNData(CompatModel):
     hidden: bool = False
-    hidden_mixin: Optional[str] = None
-    func_hidden_mixin: Optional[str] = None
+    hidden_mixin: str | None = None
+    func_hidden_mixin: str | None = None
     markdown: bool = False
-    template: Optional[str] = None
+    template: str | None = None
 
 
-class PMNPluginExtra(BaseModel):
-    author: Union[str, list[str], None] = None
-    version: Optional[str] = None
-    menu_data: Optional[list[PMDataItem]] = None
-    pmn: Optional[PMNData] = None
+class PMNPluginExtra(CompatModel):
+    author: str | list[str] | None = None
+    version: str | None = None
+    menu_data: list[PMDataItem] | None = None
+    pmn: PMNData | None = None
 
     @model_validator(mode="before")
     def normalize_input(cls, values: Any):  # noqa: N805
@@ -77,12 +79,12 @@ class PMNPluginExtra(BaseModel):
 
 class PMNPluginInfo(CompatModel):
     name: str
-    plugin_id: Optional[str] = None
-    author: Optional[str] = None
-    version: Optional[str] = None
-    description: Optional[str] = None
-    usage: Optional[str] = None
-    pm_data: Optional[list[PMDataItem]] = None
+    plugin_id: str | None = None
+    author: str | None = None
+    version: str | None = None
+    description: str | None = None
+    usage: str | None = None
+    pm_data: list[PMDataItem] | None = None
     pmn: PMNData = PMNData()
 
     @cached_property
@@ -105,5 +107,37 @@ class PMNPluginInfo(CompatModel):
         )
 
     @property
-    def plugin(self) -> Optional[Plugin]:
+    def plugin(self) -> Plugin | None:
         return get_plugin(self.plugin_id) if self.plugin_id else None
+
+
+class ExternalPluginInfo(CompatModel):
+    name: str
+    author: str | None = None
+    version: str | None = None
+    description: str | None = None
+    usage: str | None = None
+    funcs: list[PMDataItem] | None = None
+    pmn: PMNData = PMNData()
+
+    def to_plugin_info(self, plugin_id: str | None = None):
+        key_name_map = {"funcs": "pm_data"}
+        data = {
+            key_name_map.get(k, k): getattr(self, k) for k in model_fields_set(self)
+        }
+        if plugin_id:
+            data["plugin_id"] = plugin_id
+        return PMNPluginInfo(**data)
+
+    def merge_to(
+        self,
+        other: PMNPluginInfo,
+        plugin_id: str | None = None,
+        copy: bool = True,
+    ):
+        if copy:
+            other = model_copy(other)
+        this = self.to_plugin_info(plugin_id)
+        for k in model_fields_set(this):
+            setattr(other, k, getattr(this, k))
+        return other
