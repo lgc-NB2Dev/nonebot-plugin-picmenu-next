@@ -194,7 +194,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ### [hamo-reid/nonebot_plugin_PicMenu](https://github.com/hamo-reid/nonebot_plugin_PicMenu)
 
-- 灵感来源（？）
+- 灵感来源（因为这个太久没更新了所以自己写了一个）
 
 ## 💰 赞助
 
@@ -203,6 +203,22 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
 ## 📝 更新日志
+
+### 0.1.5
+
+- 修复上个版本中的 Bug
+
+### 0.1.4
+
+- 支持加载外部菜单
+
+### 0.1.3
+
+- 优化默认模板
+
+### 0.1.2
+
+- 修复上个版本中的 Bug
 
 ### 0.1.1
 
