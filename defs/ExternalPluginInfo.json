@@ -27,16 +27,6 @@
     "PMNData": {
       "properties": {
         "hidden": { "default": false, "title": "Hidden", "type": "boolean" },
-        "hidden_mixin": {
-          "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "default": null,
-          "title": "Hidden Mixin"
-        },
-        "func_hidden_mixin": {
-          "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "default": null,
-          "title": "Func Hidden Mixin"
-        },
         "markdown": { "default": false, "title": "Markdown", "type": "boolean" },
         "template": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
@@ -86,8 +76,6 @@
       "$ref": "#/$defs/PMNData",
       "default": {
         "hidden": false,
-        "hidden_mixin": null,
-        "func_hidden_mixin": null,
         "markdown": false,
         "template": null
       }

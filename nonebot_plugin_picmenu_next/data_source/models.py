@@ -52,8 +52,6 @@ class PMDataItem(CompatModel):
 
 class PMNData(CompatModel):
     hidden: bool = False
-    hidden_mixin: str | None = None
-    func_hidden_mixin: str | None = None
     markdown: bool = False
     template: str | None = None
 
