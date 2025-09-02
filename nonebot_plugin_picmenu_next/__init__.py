@@ -12,7 +12,7 @@ from .config import ConfigModel
 from .data_source import refresh_infos
 from .templates import load_builtin_templates
 
-__version__ = "0.1.6"
+__version__ = "0.1.6.post1"
 __plugin_meta__ = PluginMetadata(
     name="PicMenu Next",
     description="新一代的图片帮助插件",

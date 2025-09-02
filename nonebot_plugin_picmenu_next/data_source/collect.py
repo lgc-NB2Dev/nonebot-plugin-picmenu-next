@@ -7,7 +7,7 @@ from importlib.metadata import Distribution, PackageNotFoundError, distribution
 from pathlib import Path
 
 from cookit.loguru import warning_suppress
-from cookit.pyd import type_validate_json, type_validate_python
+from cookit.pyd import model_fields_set, type_validate_json, type_validate_python
 from nonebot import logger
 from nonebot.plugin import Plugin
 
@@ -26,8 +26,12 @@ def normalize_metadata_user(info: str, allow_multi: bool = False) -> str:
 
 @lru_cache
 def get_dist(module_name: str) -> Distribution | None:
-    with warning_suppress(f"Unexpected error happened when getting info of package {module_name}"),\
-        suppress(PackageNotFoundError):  # fmt: skip
+    with (
+        warning_suppress(
+            f"Unexpected error happened when getting info of package {module_name}",
+        ),
+        suppress(PackageNotFoundError),
+    ):
         return distribution(module_name)
     if "." not in module_name:
         return None
@@ -37,8 +41,10 @@ def get_dist(module_name: str) -> Distribution | None:
 
 @lru_cache
 def get_version_attr(module_name: str) -> str | None:
-    with warning_suppress(f"Unexpected error happened when importing {module_name}"),\
-        suppress(ImportError):  # fmt: skip
+    with (
+        warning_suppress(f"Unexpected error happened when importing {module_name}"),
+        suppress(ImportError),
+    ):
         m = importlib.import_module(module_name)
         if ver := getattr(m, "__version__", None):
             return ver
@@ -93,7 +99,7 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfo:
     )
 
     pmn = (extra.pmn if extra else None) or PMNData()
-    if ("hidden" not in pmn.model_fields_set) and meta and meta.type == "library":
+    if ("hidden" not in model_fields_set(pmn)) and meta and meta.type == "library":
         pmn = PMNData(hidden=True)
 
     logger.debug(f"Completed to get info of plugin {plugin.id_}")
