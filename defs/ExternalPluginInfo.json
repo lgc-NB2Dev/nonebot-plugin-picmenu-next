@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "PMDataItem": {
+      "properties": {
+        "func": { "title": "Func", "type": "string" },
+        "trigger_method": { "title": "Trigger Method", "type": "string" },
+        "trigger_condition": { "title": "Trigger Condition", "type": "string" },
+        "brief_des": { "title": "Brief Des", "type": "string" },
+        "detail_des": { "title": "Detail Des", "type": "string" },
+        "pmn_hidden": { "default": false, "title": "Pmn Hidden", "type": "boolean" },
+        "pmn_template": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "title": "Pmn Template"
+        }
+      },
+      "required": [
+        "func",
+        "trigger_method",
+        "trigger_condition",
+        "brief_des",
+        "detail_des"
+      ],
+      "title": "PMDataItem",
+      "type": "object"
+    },
+    "PMNData": {
+      "properties": {
+        "hidden": { "default": false, "title": "Hidden", "type": "boolean" },
+        "hidden_mixin": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "title": "Hidden Mixin"
+        },
+        "func_hidden_mixin": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "title": "Func Hidden Mixin"
+        },
+        "markdown": { "default": false, "title": "Markdown", "type": "boolean" },
+        "template": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "title": "Template"
+        }
+      },
+      "title": "PMNData",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "name": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Name"
+    },
+    "author": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Author"
+    },
+    "version": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Version"
+    },
+    "description": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Description"
+    },
+    "usage": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Usage"
+    },
+    "funcs": {
+      "anyOf": [
+        { "items": { "$ref": "#/$defs/PMDataItem" }, "type": "array" },
+        { "type": "null" }
+      ],
+      "default": null,
+      "title": "Funcs"
+    },
+    "pmn": {
+      "$ref": "#/$defs/PMNData",
+      "default": {
+        "hidden": false,
+        "hidden_mixin": null,
+        "func_hidden_mixin": null,
+        "markdown": false,
+        "template": null
+      }
+    }
+  },
+  "title": "ExternalPluginInfo",
+  "type": "object"
+}

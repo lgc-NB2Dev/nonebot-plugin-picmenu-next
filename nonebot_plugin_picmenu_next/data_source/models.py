@@ -11,22 +11,23 @@ from cookit.pyd import (
 )
 from nonebot import get_plugin
 from nonebot.plugin import Plugin
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from ..utils import normalize_plugin_name
 from .pinyin import PinyinChunkSequence
 
 T = TypeVar("T")
 
 
 if PYDANTIC_V2:
+    compat_model_config: ConfigDict = {}
     CompatModel = BaseModel
 else:
-    CompatModel = get_model_with_config(
-        {
-            "arbitrary_types_allowed": True,
-            "keep_untouched": (cached_property,),
-        },
-    )
+    compat_model_config: ConfigDict = {
+        "arbitrary_types_allowed": True,
+        "keep_untouched": (cached_property,),
+    }
+    CompatModel = get_model_with_config(compat_model_config)
 
 
 class PMDataItem(CompatModel):
@@ -77,6 +78,25 @@ class PMNPluginExtra(CompatModel):
         return values
 
 
+class OptionalPMNPluginInfo(CompatModel):
+    name: str | None = None
+    plugin_id: str | None = None
+    author: str | None = None
+    version: str | None = None
+    description: str | None = None
+    usage: str | None = None
+    pm_data: list[PMDataItem] | None = None
+    pmn: PMNData = PMNData()
+
+    def to_required(self, name: str | None = None):
+        if name is None and self.name is None:
+            raise ValueError("`name` is required for PMNPluginInfo")
+        data = {k: getattr(self, k) for k in model_fields_set(self)}
+        if name:
+            data["name"] = name
+        return PMNPluginInfo(**data)
+
+
 class PMNPluginInfo(CompatModel):
     name: str
     plugin_id: str | None = None
@@ -112,7 +132,7 @@ class PMNPluginInfo(CompatModel):
 
 
 class ExternalPluginInfo(CompatModel):
-    name: str
+    name: str | None = None
     author: str | None = None
     version: str | None = None
     description: str | None = None
@@ -120,14 +140,29 @@ class ExternalPluginInfo(CompatModel):
     funcs: list[PMDataItem] | None = None
     pmn: PMNData = PMNData()
 
-    def to_plugin_info(self, plugin_id: str | None = None):
+    def to_optional_plugin_info(self, plugin_id: str | None = None):
         key_name_map = {"funcs": "pm_data"}
         data = {
             key_name_map.get(k, k): getattr(self, k) for k in model_fields_set(self)
         }
         if plugin_id:
             data["plugin_id"] = plugin_id
-        return PMNPluginInfo(**data)
+        return OptionalPMNPluginInfo(**data)
+
+    def to_plugin_info(self, plugin_id: str | None = None, name: str | None = None):
+        if name is None:
+            if self.name is not None:
+                name = self.name
+            elif plugin_id:
+                name = normalize_plugin_name(plugin_id)
+        if name is None:
+            raise ValueError(
+                "`name` is required for PMNPluginInfo"
+                ", please set `name` to this model instance or pass it in"
+                ", or pass `plugin_id` to generate one",
+            )
+        info = self.to_optional_plugin_info(plugin_id)
+        return info.to_required(name=name)
 
     def merge_to(
         self,
@@ -137,7 +172,7 @@ class ExternalPluginInfo(CompatModel):
     ):
         if copy:
             other = model_copy(other)
-        this = self.to_plugin_info(plugin_id)
+        this = self.to_optional_plugin_info(plugin_id)
         for k in model_fields_set(this):
             setattr(other, k, getattr(this, k))
         return other

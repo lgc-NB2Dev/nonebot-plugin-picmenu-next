@@ -148,7 +148,7 @@ async def collect_menus():
                 import tomllib
             except ImportError:
                 try:
-                    import tomli as tomllib
+                    import tomli as tomllib  # pyright: ignore[reportMissingImports]
                 except ImportError as e:
                     raise ImportError(
                         "Missing dependency for parsing toml files, please install using"

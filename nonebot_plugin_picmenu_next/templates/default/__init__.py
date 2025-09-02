@@ -6,14 +6,14 @@ import jinja2 as jj
 from cookit import DebugFileWriter
 from cookit.pw import RouterGroup, make_real_path_router, screenshot_html
 from cookit.pw.loguru import log_router_err
-from cookit.pyd import model_with_alias_generator
+from cookit.pyd.compat import get_model_with_config
 from nonebot import get_plugin_config
 from nonebot_plugin_alconna.uniseg import UniMessage
 from nonebot_plugin_htmlrender import get_new_page
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from ...config import version
-from ...data_source.models import PMDataItem, PMNPluginInfo
+from ...data_source.models import PMDataItem, PMNPluginInfo, compat_model_config
 from .. import detail_templates, func_detail_templates, index_templates
 from ..pw_utils import ROUTE_BASE_URL, base_routers, register_filters
 
@@ -21,14 +21,21 @@ if TYPE_CHECKING:
     from yarl import URL
 
 
-@model_with_alias_generator(lambda x: f"pmn_default_{x}")
-class TemplateConfigModel(BaseModel):
+AliasCompatModel = get_model_with_config(
+    {
+        "alias_generator": lambda x: f"pmn_default_{x}",
+        **compat_model_config,
+    },
+)
+
+
+class TemplateConfigModel(AliasCompatModel):
     command_start: set[str] = Field(alias="command_start")
 
     dark: bool = False
     enable_builtin_code_css: bool = True
-    additional_css: list[str] = []
-    additional_js: list[str] = []
+    additional_css: list[str] = Field(default_factory=list)
+    additional_js: list[str] = Field(default_factory=list)
 
     @cached_property
     def pfx(self) -> str:

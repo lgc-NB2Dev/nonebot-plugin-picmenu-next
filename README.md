@@ -168,18 +168,48 @@ plugins = [
 
 在 NoneBot2 项目的 `.env` 文件中添加下表中的配置
 
-|             配置项              | 必填 |  默认值   |              说明              |
-| :-----------------------------: | :--: | :-------: | :----------------------------: |
-|      `PMN_INDEX_TEMPLATE`       |  否  | `default` |       首页展示模板的名称       |
-|      `PMN_DETAIL_TEMPLATE`      |  否  | `default` |       插件详情模板的名称       |
-|   `PMN_FUNC_DETAIL_TEMPLATE`    |  否  | `default` |     插件功能详情模板的名称     |
-| `PMN_ONLY_SUPERUSER_SEE_HIDDEN` |  否  |  `False`  | 是否仅超级用户可以查看隐藏内容 |
+|                配置项                 | 必填 |  默认值   |              说明              |
+| :-----------------------------------: | :--: | :-------: | :----------------------------: |
+|             **本体配置**              |      |           |                                |
+|         `PMN_INDEX_TEMPLATE`          |  否  | `default` |       首页展示模板的名称       |
+|         `PMN_DETAIL_TEMPLATE`         |  否  | `default` |       插件详情模板的名称       |
+|      `PMN_FUNC_DETAIL_TEMPLATE`       |  否  | `default` |     插件功能详情模板的名称     |
+|    `PMN_ONLY_SUPERUSER_SEE_HIDDEN`    |  否  |  `False`  | 是否仅超级用户可以查看隐藏内容 |
+|           **默认模板配置**            |      |           |                                |
+|          `PMN_DEFAULT_DARK`           |  否  |  `False`  |        是否使用暗色模式        |
+| `PMN_DEFAULT_ENABLE_BUILTIN_CODE_CSS` |  否  |  `True`   |    是否启用内置代码着色 CSS    |
+|     `PMN_DEFAULT_ADDITIONAL_CSS`      |  否  |   `[]`    |     要附加的 CSS 路径列表      |
+|      `PMN_DEFAULT_ADDITIONAL_JS`      |  否  |   `[]`    |      要附加的 JS 路径列表      |
 
 ## 🎉 使用
 
 发送 `帮助` 指令试试吧！
 
+### 外部菜单加载说明
+
+本插件兼容原 PicMenu 的外部菜单路径及格式，并在其基础上做了些许扩展
+
+本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载
+
+- 插件 localstore 路径下的 `external_infos` 文件夹
+- 原 PicMenu 的 `menu_config/menus` 文件夹
+
+插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
+仅被配置文件定义的顶层属性会被覆盖
+
+配置文件定义 Schema 请查看 [defs/ExternalPluginInfo.json](./defs/ExternalPluginInfo.json)
+
 ## 🔧 开发
+
+### 插件开发者对接
+
+文档待补充
+
+### Mixin
+
+文档待补充
+
+### 菜单模板
 
 文档待补充
 
@@ -203,6 +233,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
 ## 📝 更新日志
+
+### 0.1.6
+
+- 尝试修复与 Pydantic V1 的兼容性
 
 ### 0.1.5
 
