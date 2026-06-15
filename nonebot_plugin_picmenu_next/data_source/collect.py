@@ -170,13 +170,13 @@ async def collect_menus():
     infos: dict[str, ExternalPluginInfo] = {}
 
     def _load_to_infos(path: Path):
-        if path.name in infos:
+        if (key := path.stem) in infos:
             logger.warning(
-                f"Find file with duplicated name `{path.name}`! Skip loading {{path}}",
+                f"Find file with duplicated plugin id `{key}`! Skip loading {path}",
             )
             return
         with warning_suppress(f"Failed to load file {path}"):
-            infos[path.name] = _load_file(path)
+            infos[key] = _load_file(path)
 
     def _load_all(path: Path):
         for x in scan_path(path, supported_suffixes):

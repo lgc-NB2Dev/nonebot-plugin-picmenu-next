@@ -167,6 +167,11 @@ async def _(
     if not show_hidden:
         infos = [x for x in infos if not x.pmn.hidden]
 
+    if not infos:
+        await UniMessage.text(
+            "当前貌似没有任何可用的插件信息呢……",
+        ).finish(reply_to=True)
+
     if not q_plugin.result:
         m = await index_templates.get()(infos, show_hidden)
         await m.finish()

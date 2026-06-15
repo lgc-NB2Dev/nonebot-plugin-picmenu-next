@@ -68,7 +68,7 @@ class PMNPluginExtra(CompatModel):
             values = type_dump_python(values, exclude_unset=True)
         if not isinstance(values, dict):
             raise TypeError(f"Expected dict, got {type(values)}")
-        should_normalize_keys = {x for x in values if x.lower() in {"author"}}
+        should_normalize_keys = {x for x in values if x.lower() == "author"}
         for key in should_normalize_keys:
             value = values[key]
             del values[key]
