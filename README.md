@@ -187,31 +187,11 @@ plugins = [
 
 ### 外部菜单加载说明
 
-本插件兼容原 PicMenu 的外部菜单路径及格式，并在其基础上做了些许扩展
-
-本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载
-
-- 插件 localstore 路径下的 `external_infos` 文件夹
-- 原 PicMenu 的 `menu_config/menus` 文件夹
-
-插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
-仅被配置文件定义的顶层属性会被覆盖
-
-配置文件定义 Schema 请查看 [defs/ExternalPluginInfo.json](./defs/ExternalPluginInfo.json)
+本插件兼容原 PicMenu 的外部菜单路径及格式，并在其基础上做了些许扩展，详见下方开发文档
 
 ## 🔧 开发
 
-### 插件开发者对接
-
-文档待补充
-
-### Mixin
-
-文档待补充
-
-### 菜单模板
-
-文档待补充
+更完整的开发说明请查看 [开发文档](./docs/development.md)，涵盖 编写外部菜单项、插件开发者对接、Mixin 开发 与 菜单模板开发 等内容。
 
 ## 📞 联系
 
