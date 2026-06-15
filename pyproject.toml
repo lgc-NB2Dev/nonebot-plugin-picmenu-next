@@ -12,6 +12,7 @@ dependencies = [
     "jieba>=0.42.1",
     "thefuzz>=0.22.1",
     "markdown-it-py[plugins]>=4.2.0",
+    "markdown-katex>=202406.1035",
     "pygments>=2.20.0",
     "nonebot-plugin-htmlrender>=0.7.0",
 ]

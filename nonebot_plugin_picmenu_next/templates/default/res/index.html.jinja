@@ -1,7 +1,9 @@
 {%- extends "base.html.jinja" -%}
 
 {%- block head -%}
-<link rel="stylesheet" href="./css/index.css" />
+<style>
+  {{ read_res("css/index.css") | safe }}
+</style>
 {%- endblock -%}
 
 {%- block main -%}

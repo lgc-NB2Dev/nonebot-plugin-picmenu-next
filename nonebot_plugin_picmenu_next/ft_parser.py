@@ -85,7 +85,7 @@ def resolve_attr(key: str, value: str) -> Any:
 
         return value
 
-    if key in {"fonts"}:
+    if key == "fonts":
         return value
 
     raise ValueError(f"Invalid attribute {key} with value {value}")

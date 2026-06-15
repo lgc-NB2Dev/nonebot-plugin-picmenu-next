@@ -4,16 +4,22 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/base.css" />
-    {% if cfg.dark -%}<link rel="stylesheet" href="./css/dark.css" />{% endif %}
-    <link rel="stylesheet" href="./third-party/katex.min.css" />
+    <style>
+      {{ read_res("css/base.css") | safe }}
+      {% if cfg.dark -%}{{ read_res("css/dark.css") | safe }}{% endif %}
+      {{ read_res("third-party/katex.min.css") | safe }}
+    </style>
     {% if cfg.enable_builtin_code_css -%}
-    {% if cfg.dark -%}<link rel="stylesheet" href="./third-party/code-github-dark.css" />
-    {% else -%}<link rel="stylesheet" href="./third-party/code-colorful.css" />{% endif %}
+    <style>
+      {% if cfg.dark -%}{{ read_res("third-party/code-github-dark.css") | safe }}
+      {% else -%}{{ read_res("third-party/code-colorful.css") | safe }}{% endif %}
+    </style>
     {% endif -%}
     {% block head %}{% endblock -%}
     {% for f in cfg.additional_css -%}
-    <link rel="stylesheet" href="./local-file/?path={{ f | url_encode | safe }}" />
+    <style>
+      {{ read_local_file(f) | safe }}
+    </style>
     {% endfor -%}
   </head>
   <body>
@@ -26,10 +32,4 @@
       </div>
     </main>
   </body>
-  <script src="./third-party/katex.min.js"></script>
-  <script src="./js/base.js"></script>
-  {% for f in cfg.additional_js -%}
-  <script src="./local-file/?path={{ f | url_encode | safe }}"></script>
-  {% endfor -%}
-  {% block script %}{% endblock -%}
 </html>

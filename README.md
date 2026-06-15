@@ -179,7 +179,7 @@ plugins = [
 |          `PMN_DEFAULT_DARK`           |  否  |  `False`  |        是否使用暗色模式        |
 | `PMN_DEFAULT_ENABLE_BUILTIN_CODE_CSS` |  否  |  `True`   |    是否启用内置代码着色 CSS    |
 |     `PMN_DEFAULT_ADDITIONAL_CSS`      |  否  |   `[]`    |     要附加的 CSS 路径列表      |
-|      `PMN_DEFAULT_ADDITIONAL_JS`      |  否  |   `[]`    |      要附加的 JS 路径列表      |
+|     `PMN_DEFAULT_RENDER_BACKEND`      |  否  |  `None`   | 默认模板使用的 htmlrender 后端 |
 
 ## 🎉 使用
 
@@ -233,6 +233,14 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
 ## 📝 更新日志
+
+### 0.2.0
+
+- 适配 `nonebot-plugin-htmlrender` 0.7 渲染后端接口：
+  - 默认模板改为无运行时 JS 渲染，Markdown 公式改为 Python 侧预渲染 KaTeX HTML
+  - 默认模板本地样式改为内联读取，不再依赖 Playwright 路由加载静态资源
+  - 新增 `PMN_DEFAULT_RENDER_BACKEND` 配置，可为默认模板指定 htmlrender 渲染后端
+  - 移除默认模板的 `PMN_DEFAULT_ADDITIONAL_JS` 配置支持
 
 ### 0.1.6
 

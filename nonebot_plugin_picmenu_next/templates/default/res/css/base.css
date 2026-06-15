@@ -22,12 +22,17 @@
   --decent-color: #6663;
 
   --font-family-main: 'HarmonyOS Sans SC';
-  --font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code',
-    'Source Code Pro', 'Courier New', 'Courier';
+  --font-family-monospace:
+    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Source Code Pro', 'Courier New',
+    'Courier';
 }
 
 * {
   box-sizing: border-box;
+}
+
+body {
+  margin: 0;
 }
 
 h1,

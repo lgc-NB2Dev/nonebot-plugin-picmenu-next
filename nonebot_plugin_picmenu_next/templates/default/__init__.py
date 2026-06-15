@@ -1,25 +1,26 @@
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import jinja2 as jj
 from cookit import DebugFileWriter
-from cookit.pw import RouterGroup, make_real_path_router, screenshot_html
-from cookit.pw.loguru import log_router_err
 from cookit.pyd.compat import get_model_with_config
 from nonebot import get_plugin_config
 from nonebot_plugin_alconna.uniseg import UniMessage
-from nonebot_plugin_htmlrender import get_new_page
+from nonebot_plugin_htmlrender.backend.playwright.models import (
+    ContentConfig,
+    HtmlRenderRequest,
+    JpegScreenshotOptions,
+    PageConfig,
+    RenderConfig,
+    ViewportConfig,
+)
+from nonebot_plugin_htmlrender.consts import RenderBackend
 from pydantic import Field
 
 from ...config import version
 from ...data_source.models import PMDataItem, PMNPluginInfo, compat_model_config
 from .. import detail_templates, func_detail_templates, index_templates
-from ..pw_utils import ROUTE_BASE_URL, base_routers, register_filters
-
-if TYPE_CHECKING:
-    from yarl import URL
-
+from ..t_utils import get_template_render, read_local_file, register_filters
 
 AliasCompatModel = get_model_with_config(
     {
@@ -32,10 +33,10 @@ AliasCompatModel = get_model_with_config(
 class TemplateConfigModel(AliasCompatModel):
     command_start: set[str] = Field(alias="command_start")
 
+    render_backend: RenderBackend | None = None
     dark: bool = False
     enable_builtin_code_css: bool = True
     additional_css: list[str] = Field(default_factory=list)
-    additional_js: list[str] = Field(default_factory=list)
 
     @cached_property
     def pfx(self) -> str:
@@ -55,31 +56,40 @@ register_filters(jj_env)
 
 debug = DebugFileWriter(Path.cwd() / "debug", "picmenu-next", "default")
 
-
-base_routers = base_routers.copy()
-
-
-@base_routers.router(f"{ROUTE_BASE_URL}/**/*", 99)
-@make_real_path_router
-@log_router_err()
-async def _(url: "URL", **_):
-    return RES_DIR.joinpath(*url.parts[1:])
+SUPPORTED_RENDER_BACKENDS = frozenset({RenderBackend.PLAYWRIGHT})
+template_render = get_template_render(
+    template_config.render_backend,
+    SUPPORTED_RENDER_BACKENDS,
+    "PicMenu default template",
+)
 
 
-async def render(template: str, routers: RouterGroup, **kwargs):
+def read_res(path: str) -> str:
+    return read_local_file(RES_DIR / path)
+
+
+async def render(template: str, **kwargs):
     template_obj = jj_env.get_template(template)
     html = await template_obj.render_async(
         **kwargs,
         cfg=template_config,
+        read_local_file=read_local_file,
+        read_res=read_res,
         version=version(),
     )
     if debug.enabled:
         debug.write(html, f"{template.replace('.html.jinja', '')}_{{time}}.html")
 
-    async with get_new_page(viewport={"width": 1920, "height": 5400}) as page:
-        await routers.apply(page)
-        await page.goto(f"{ROUTE_BASE_URL}/")
-        pic = await screenshot_html(page, html, selector="main", type="jpeg")
+    request = HtmlRenderRequest(
+        content=ContentConfig(html=html),
+        render=RenderConfig(
+            page=PageConfig(
+                viewport=ViewportConfig(width=810, height=10),
+            ),
+            screenshot=JpegScreenshotOptions(full_page=True),
+        ),
+    )
+    pic = await template_render.render_html(request)
     return UniMessage.image(raw=pic)
 
 
@@ -88,10 +98,8 @@ async def render_index(
     infos: list[PMNPluginInfo],
     showing_hidden: bool,
 ) -> UniMessage:
-    routers = base_routers.copy()
     return await render(
         "index.html.jinja",
-        routers,
         infos=infos,
         showing_hidden=showing_hidden,
     )
@@ -103,10 +111,8 @@ async def render_detail(
     info_index: int,
     showing_hidden: bool,
 ) -> UniMessage:
-    routers = base_routers.copy()
     return await render(
         "detail.html.jinja",
-        routers,
         info=info,
         info_index=info_index,
         showing_hidden=showing_hidden,
@@ -121,10 +127,8 @@ async def render_func_detail(
     func_index: int,
     showing_hidden: bool,
 ) -> UniMessage:
-    routers = base_routers.copy()
     return await render(
         "detail.html.jinja",
-        routers,
         info=info,
         info_index=info_index,
         func=func,

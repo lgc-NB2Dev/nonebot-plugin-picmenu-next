@@ -1,7 +1,5 @@
 main {
-  /* width: fit-content; */
-  /* max-width: 810px; */
-  width: 810px;
+  width: 100%;
 }
 
 .inner-flex {

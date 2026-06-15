@@ -38,7 +38,7 @@ class PinyinChunkSequence(list[PinyinChunk]):
         transformed = pinyin(
             [x.strip() for x in jieba.lcut(text)],
             style=Style.TONE3,
-            errors=lambda x: _NotCHNStr(x),
+            errors=_NotCHNStr,
             neutral_tone_with_five=True,
         )
         return cls(PinyinChunk.from_pinyin_res(x[0]) for x in transformed)
