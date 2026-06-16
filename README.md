@@ -48,6 +48,20 @@ _✨ 新一代的图片帮助插件 ✨_
 
 </div>
 
+## ℹ️ Tip
+
+htmlrender 插件 v0.7 版本目前可能存在未配置渲染后端导致启动报错的问题，可以添加以下配置项解决：
+
+```properties
+RENDER_BACKEND=playwright
+```
+
+可选添加以下项，使浏览器在 Bot 启动时预加载并启动：
+
+```properties
+RENDER_STARTUP_MODE=probe
+```
+
 ## 📖 介绍
 
 - ✨ **美观的图片界面**：直观友好的图片界面
