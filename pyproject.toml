@@ -2,7 +2,7 @@
 name = "nonebot-plugin-picmenu-next"
 dynamic = ["version"]
 description = "Next-gen PicMenu plugin for NoneBot2"
-authors = [{ name = "LgCookie", email = "lgc2333@126.com" }]
+authors = [{ name = "LgCuwukii", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.5.0",
     "nonebot-plugin-alconna>=0.62.0",

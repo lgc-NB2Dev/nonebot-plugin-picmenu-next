@@ -41,7 +41,7 @@ alc = Alconna(
     ),
     meta=CommandMeta(
         description="新一代的图片帮助插件",
-        author="LgCookie",
+        author="LgCuwukii",
     ),
 )
 m_cls = on_alconna(

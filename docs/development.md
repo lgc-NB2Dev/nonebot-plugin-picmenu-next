@@ -90,7 +90,7 @@ __plugin_meta__ = PluginMetadata(
     usage="插件用法说明",
     type="application",
     extra={
-        "author": "LgCookie",
+        "author": "LgCuwukii",
         "version": "1.0.0",
         "pmn": {
             "hidden": False,
