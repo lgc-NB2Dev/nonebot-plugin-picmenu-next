@@ -1,23 +1,32 @@
 from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
-from typing import TypeVar
+from typing import TypeVar, cast, overload
+from typing_extensions import override
 
 from arclet.alconna import Alconna, Arg, Args, CommandMeta, Option, store_true
+from cookit.pyd import model_copy
 from loguru import logger
-from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
+from nonebot.adapters import Adapter as BaseAdapter, Bot as BaseBot, Event as BaseEvent
 from nonebot.permission import SUPERUSER
-from nonebot_plugin_alconna import Query, on_alconna
+from nonebot.utils import resolve_dot_notation
+from nonebot_plugin_alconna import Extension, Query, add_global_extension, on_alconna
+from nonebot_plugin_alconna.extension import OutputType
 from nonebot_plugin_alconna.uniseg import UniMessage
 from thefuzz import process
 
 from .config import config
 from .data_source import get_infos
+from .data_source.alconna import get_alconna_plugin_id
 from .data_source.mixin import resolve_detail_mixin, resolve_main_mixin
 from .data_source.models import PinyinChunkSequence, PMDataItem, PMNPluginInfo
 from .templates import detail_templates, func_detail_templates, index_templates
 
 RES_DIR = Path(__file__).parent / "res"
 TIP_IMG_PATH = RES_DIR / "gan_shen_me.jpg"
+
+T = TypeVar("T")
+
 
 alc = Alconna(
     "help",
@@ -76,9 +85,6 @@ def get_name_similarities(
         ),
     )
     return similarities
-
-
-T = TypeVar("T")
 
 
 def handle_query_index(query: str, infos: Sequence[T]) -> tuple[int, T] | None:
@@ -143,6 +149,140 @@ async def query_func_detail(
     return None
 
 
+def filter_hidden_functions(info: PMNPluginInfo) -> PMNPluginInfo:
+    if not info.pm_data:
+        return info
+    return model_copy(
+        info, update={"pm_data": [x for x in info.pm_data if not x.hidden]}
+    )
+
+
+def is_plugin_supported_adapter(info: PMNPluginInfo, adapter: BaseAdapter) -> bool:
+    plugin = info.plugin
+    if (not plugin) or (not plugin.metadata):
+        return True
+    if (supported_adapters := plugin.metadata.supported_adapters) is None:
+        return True
+
+    current_module = type(adapter).__module__
+    for supported_adapter in supported_adapters:
+        module, _, _ = supported_adapter.partition(":")
+        if module.startswith("~"):
+            module = f"nonebot.adapters.{module[1:]}"
+        if current_module != module and not current_module.startswith(f"{module}."):
+            continue
+
+        with suppress(ModuleNotFoundError, ImportError, AttributeError):
+            adapter_class = resolve_dot_notation(
+                supported_adapter,
+                "Adapter",
+                "nonebot.adapters.",
+            )
+            if isinstance(adapter_class, type) and isinstance(adapter, adapter_class):
+                return True
+    return False
+
+
+def filter_unsupported_adapters(
+    infos: list[PMNPluginInfo],
+    adapter: BaseAdapter,
+) -> list[PMNPluginInfo]:
+    return [
+        info
+        if is_plugin_supported_adapter(info, adapter)
+        else model_copy(
+            info, update={"pmn": model_copy(info.pmn, update={"hidden": True})}
+        )
+        for info in infos
+    ]
+
+
+@overload
+async def render_menu(
+    bot: BaseBot,
+    *,
+    q_plugin: str | None = None,
+    q_function: str | None = None,
+    show_hidden: bool = False,
+) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
+
+
+@overload
+async def render_menu(
+    bot: BaseBot,
+    *,
+    plugin_id: str | None = None,
+    alc_cmd_id: str | None = None,
+    show_hidden: bool = False,
+) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
+
+
+async def render_menu(
+    bot: BaseBot,
+    q_plugin: str | None = None,
+    q_function: str | None = None,
+    plugin_id: str | None = None,
+    alc_cmd_id: str | None = None,
+    show_hidden: bool = False,
+) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]:
+    infos = filter_unsupported_adapters(get_infos(), bot.adapter)
+    infos = await resolve_main_mixin(infos)
+    if not show_hidden:
+        infos = [x for x in infos if not x.pmn.hidden]
+    if not infos:
+        return None, None, None
+
+    if plugin_id:
+        r = next(
+            ((i, x) for i, x in enumerate(infos) if x.plugin_id == plugin_id), None
+        )
+    elif q_plugin:
+        r = await query_plugin(infos, q_plugin)
+    else:
+        return await index_templates.get()(infos, show_hidden), None, None
+
+    if not r:
+        return None, None, None
+
+    info_index, info = r
+    if not show_hidden:
+        info = filter_hidden_functions(info)
+    info = await resolve_detail_mixin(info)
+
+    if (not q_function) and (not alc_cmd_id):
+        return (
+            await detail_templates.get(
+                info.pmn.template,
+            )(info, info_index, show_hidden),
+            info,
+            None,
+        )
+
+    pm_data = info.pm_data
+    if not pm_data:
+        return None, info, None
+
+    if alc_cmd_id:
+        r = next(
+            ((i, x) for i, x in enumerate(pm_data) if x.alc_cmd_id == alc_cmd_id), None
+        )
+    else:
+        assert q_function is not None
+        r = await query_func_detail(pm_data, q_function)
+
+    if not r:
+        return None, info, None
+
+    func_index, func = r
+    return (
+        await func_detail_templates.get(
+            func.template,
+        )(info, info_index, func, func_index, show_hidden),
+        info,
+        func,
+    )
+
+
 @m_cls.handle()
 async def _(
     bot: BaseBot,
@@ -163,46 +303,69 @@ async def _(
             .finish(reply_to=True)
         )
 
-    infos = await resolve_main_mixin(get_infos())
-    if not show_hidden:
-        infos = [x for x in infos if not x.pmn.hidden]
+    msg, info, func = await render_menu(
+        bot,
+        q_plugin=(qp := q_plugin.result),
+        q_function=(qf := q_function.result),
+        show_hidden=show_hidden,
+    )
+    if msg:
+        await msg.finish()
 
-    if not infos:
+    if (not qp) and (not qf):
         await UniMessage.text(
             "当前貌似没有任何可用的插件信息呢……",
         ).finish(reply_to=True)
 
-    if not q_plugin.result:
-        m = await index_templates.get()(infos, show_hidden)
-        await m.finish()
-
-    r = await query_plugin(infos, q_plugin.result)
-    if not r:
+    if not info:
         await UniMessage.text("好像没有找到对应插件呢……").finish(reply_to=True)
-    info_index, info = r
-    if not q_function.result:
-        m = await detail_templates.get(
-            info.pmn.template,
-        )(info, info_index, show_hidden)
-        await m.finish()
 
-    info = await resolve_detail_mixin(info)
-    pm_data = info.pm_data
-    if pm_data and (not show_hidden):
-        pm_data = [x for x in pm_data if not x.hidden]
-
-    if not pm_data:
-        await UniMessage.text(
-            f"插件 `{info.name}` 没有详细功能介绍哦",
-        ).finish(reply_to=True)
-
-    r = await query_func_detail(pm_data, q_function.result)
-    if not r:
+    if (not func) and info.pm_data and qf:
         await UniMessage.text(
             f"好像没有找到插件 `{info.name}` 的对应功能呢……",
         ).finish(reply_to=True)
-    func_index, func = r
-    m = await func_detail_templates.get(
-        func.template,
-    )(info, info_index, func, func_index, show_hidden)
-    await m.finish()
+
+    await UniMessage.text(
+        f"插件 `{info.name}` 没有详细功能介绍哦",
+    ).finish(reply_to=True)
+
+
+class PMNHelpExtension(Extension):
+    command: "Alconna | None" = None
+
+    @property
+    def priority(self) -> int:
+        return 8
+
+    @property
+    def id(self) -> str:
+        return "picmenu-next-help"
+
+    @override
+    async def output_converter(
+        self,
+        output_type: OutputType,
+        content: str,
+    ) -> UniMessage:
+        if (
+            output_type == "help"
+            and self.command
+            and (plugin_id := get_alconna_plugin_id(self.command))
+        ):
+            bot = cast("BaseBot", await self.inject(("bot", BaseBot)))
+            msg, _, _ = await render_menu(
+                bot,
+                plugin_id=plugin_id,
+                alc_cmd_id=self.command.path,
+            )
+            if msg:
+                return msg
+        return await super().output_converter(output_type, content)
+
+    @override
+    def post_init(self, alc: "Alconna") -> None:
+        self.command = alc
+
+
+if config.alconna_global_ext:
+    add_global_extension(PMNHelpExtension)

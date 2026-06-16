@@ -4,19 +4,48 @@
 
 ## Quick QA
 
-### 来到这里只想看如何适配 Markdown 展示？
+### 如何适配 Markdown 展示？
 
-很简单！按如下方式编辑插件元数据，你即刻就可让插件信息走 Markdown 渲染：
+按如下方式编辑插件元数据，你即刻就可让插件信息走 Markdown 渲染：
 
 ```python
 __plugin_meta__ = PluginMetadata(
     ...,
     extra={
-        # ...
         "pmn": {  # PicMenu Next 专有配置字段，详见下方文档
             "markdown": True,  # 开启 PicMenu Next 的 Markdown 支持
         },
-        # ...
+    },
+)
+```
+
+### 如何禁用 Alconna 命令自动探测？
+
+在插件元数据的 `extra` 中显式设置 `menu_data`，例如空列表 `[]`，即可表示插件已自行声明三级菜单，PicMenu Next 不会再从该插件注册的 Alconna 命令自动补全：
+
+```python
+__plugin_meta__ = PluginMetadata(
+    ...,
+    extra={
+        "menu_data": [],
+    },
+)
+```
+
+### 已经写了菜单项，还想附加 Alconna 自动探测结果？
+
+在 `extra["pmn"]` 中设置 `alc_force_enable_detect=True` 即可强制启用 Alconna 自动探测。探测生成的功能项会附加到当前插件菜单项的最前面：
+
+```python
+__plugin_meta__ = PluginMetadata(
+    ...,
+    extra={
+        "pmn": {
+            "alc_force_enable_detect": True,
+        },
+        "menu_data": [
+            # ...
+        ],
     },
 )
 ```
@@ -67,6 +96,7 @@ __plugin_meta__ = PluginMetadata(
             "hidden": False,
             "markdown": True,
             "template": "default",
+            "alc_force_enable_detect": False,
         },
         "menu_data": [
             {
@@ -83,11 +113,12 @@ __plugin_meta__ = PluginMetadata(
 
 `pmn` 支持以下可选字段：
 
-| 字段       | 类型          | 默认值  | 说明                                       |
-| ---------- | ------------- | ------- | ------------------------------------------ |
-| `hidden`   | `bool`        | `False` | 是否在普通帮助菜单中隐藏                   |
-| `markdown` | `bool`        | `False` | 是否将描述、用法、功能详情按 Markdown 渲染 |
-| `template` | `str \| None` | `None`  | 为该插件指定详情页模板                     |
+| 字段                      | 类型          | 默认值  | 说明                                                |
+| ------------------------- | ------------- | ------- | --------------------------------------------------- |
+| `hidden`                  | `bool`        | `False` | 是否在普通帮助菜单中隐藏                            |
+| `markdown`                | `bool`        | `False` | 是否将描述、用法、功能详情按 Markdown 渲染          |
+| `template`                | `str \| None` | `None`  | 为该插件指定详情页模板                              |
+| `alc_force_enable_detect` | `bool`        | `False` | 即使已定义 `menu_data`，也强制启用 Alconna 自动探测 |
 
 `menu_data` 中每一项对应一个三级菜单功能，必填字段为 `func`、`trigger_method`、`trigger_condition`、`brief_des`、`detail_des`。
 
@@ -98,70 +129,138 @@ __plugin_meta__ = PluginMetadata(
 | `pmn_hidden`   | `bool`        | `False` | 是否隐藏该功能             |
 | `pmn_template` | `str \| None` | `None`  | 为该功能指定功能详情页模板 |
 
+## Alconna 命令自动探测
+
+如果插件没有提供 `menu_data` 或将其设为 `None`，PicMenu Next 会尝试从该插件注册的 Alconna 命令自动补全三级菜单。若插件 metadata 中提供了 `menu_data` 且值不是 `None`，包括显式设为空列表 `[]`，都会视为插件已自行声明三级菜单并禁用 Alconna 自动探测。
+
+如果你既想保留手写菜单项，又想附加自动探测结果，可以在插件 metadata 的 `extra["pmn"]` 中设置 `alc_force_enable_detect=True`。开启后即使 `menu_data` 已经有内容，PicMenu Next 也会继续探测该插件的 Alconna 命令，并将生成的菜单项放到现有菜单项最前面。
+
+如果你需要更复杂的追加、删除或重排逻辑，可以通过 mixin 在菜单数据收集后修改 `PMNPluginInfo.pm_data`。
+
+自动探测会读取命令名、可触发命令、命令描述与帮助文本生成 `PMDataItem`。其中 `brief_des` 固定使用 `CommandMeta.description`；如果插件启用了 `extra["pmn"]["markdown"] = True`，并且命令没有自定义 formatter，详细用法会使用 Alconna 的 Markdown formatter 生成。
+
+单条 Alconna 命令可以通过 `CommandMeta.extra["pmn"]` 覆盖自动生成的菜单项字段。该配置按全可空的 `PMDataItem` 校验，未填写的字段继续使用自动生成值：
+
+```python
+from arclet.alconna import Alconna, CommandMeta
+
+alc = Alconna(
+    "example",
+    meta=CommandMeta(
+        description="简要说明",
+        extra={
+            "pmn": {
+                "func": "功能名称",
+                "trigger_method": "`/example`",
+                "trigger_condition": "发送对应指令",
+                "detail_des": "详细用法说明",
+                "pmn_hidden": False,
+                "pmn_template": "default",
+            },
+        },
+    ),
+)
+```
+
 ## Mixin 编写
 
 Mixin 用于在 PicMenu Next 收集或展示菜单前后修改菜单数据。所有 mixin 都是异步函数，返回修改后的数据。
 
 常用入口位于 `nonebot_plugin_picmenu_next.data_source.mixin`：
 
-| 装饰器                  | 作用范围                         |
-| ----------------------- | -------------------------------- |
-| `plugin_collect_mixins` | 插件信息收集完成后，全局修改列表 |
-| `plugin_mixins`         | 首页渲染前，全局修改插件列表     |
-| `self_mixins`           | 首页渲染前，只修改当前插件自身   |
-| `plugin_detail_mixins`  | 详情页渲染前，全局修改插件信息   |
-| `self_detail_mixins`    | 详情页渲染前，只修改当前插件自身 |
+| 装饰器                  | 作用范围                             |
+| ----------------------- | ------------------------------------ |
+| `plugin_collect_mixins` | 插件信息收集完成后，全局修改列表     |
+| `plugin_mixins`         | 首页渲染前，全局修改插件列表         |
+| `self_mixins`           | 首页渲染前，只修改当前插件自身       |
+| `plugin_detail_mixins`  | 功能详情页渲染前，全局修改插件信息   |
+| `self_detail_mixins`    | 功能详情页渲染前，只修改当前插件自身 |
 
-`priority` 数字越小越早执行。mixin 函数第一个参数是 `next_mixin`，可以选择在调用前或调用后修改数据。
+`priority` 数字越小越早执行。mixin 函数第一个参数是 `next_mixin`，它不一定要放在函数最后调用；可以按需放在任意位置，以决定你的逻辑在其他 mixin 执行完成之前、之后或前后都运行。
 
-> [!WARNING]
-> 传入 mixin 的 `PMNPluginInfo` / `PMDataItem` 是当前菜单数据中的**现有对象引用**，直接修改字段是预期行为，后续 mixin 与模板会看到这些修改。  
-> 如果只想临时派生一份数据，请在 mixin 内自行复制对象后再返回。
+如果某个 mixin 执行时抛出异常，PicMenu Next 会记录一条警告并跳过当前 mixin，然后继续调用后续 mixin。这样可以避免单个扩展导致帮助菜单整体不可用；如果你的 mixin 已经在抛错前原地修改了对象，这些修改不会被自动回滚。
+
+> [!CAUTION]
+> 传入 mixin 的 `PMNPluginInfo` / `PMDataItem` 是当前菜单数据中的**现有对象引用**
+>
+> 直接修改字段会同步写回内存中的全局插件数据，这是预期行为，也意味着这个改动**会污染后续每一次调用**  
+> 例如每次处理帮助菜单时都追加 `description`，文本会在之后的每次调用中持续累积。
+>
+> 除非你确实想永久修改这份全局数据，否则请先复制原数据，或新建一份数据后再修改并返回。
 
 ```python
 from nonebot_plugin_picmenu_next.data_source.mixin import (
+    PluginCollectMixinNext,
     PluginDetailMixinNext,
+    PluginMixinNext,
     SelfMixinNext,
+    plugin_collect_mixins,
+    plugin_detail_mixins,
+    plugin_mixins,
     self_detail_mixins,
     self_mixins,
 )
 from nonebot_plugin_picmenu_next.data_source.models import PMNPluginInfo
 
 
-@self_mixins(priority=5)
-async def add_suffix(
-    next_mixin: SelfMixinNext,
-    info: PMNPluginInfo,
-) -> PMNPluginInfo:
-    info = await next_mixin(info)
-    info.description = f"{info.description or ''}\n\n由当前插件的 mixin 追加。"
-    return info
+# plugin_collect_mixins 在插件信息收集完成后运行，传入收集好的所有插件信息
+# 示例中添加一个虚拟插件，并修改它的展示信息
+@plugin_collect_mixins()
+async def _(next_mixin: PluginCollectMixinNext, infos: list[PMNPluginInfo]):
+    infos.append(
+        PMNPluginInfo(
+            plugin_id="picmenu_mixin_test",
+            name="插件收集 Mixin 测试",
+            description="我是在插件收集阶段被 Mixin 添加的插件！",
+        ),
+    )
+    idx = next(i for i, x in enumerate(infos) if x.plugin_id == "picmenu_mixin_test")
+
+    info = infos[idx].model_copy()
+    info.name = "PicMenu Mixin 测试"
+    info.description = "我的名称与简介是在插件收集阶段被 Mixin 修改的！"
+    infos[idx] = info
+    return await next_mixin(infos)
 
 
-@self_detail_mixins(priority=5)
-async def add_detail_note(
-    next_mixin: PluginDetailMixinNext,
-    info: PMNPluginInfo,
-) -> PMNPluginInfo:
-    info = await next_mixin(info)
-    info.usage = f"{info.usage or ''}\n\n> 这段内容只会出现在当前插件详情页。"
-    return info
-```
-
-全局修改示例：
-
-```python
-from nonebot_plugin_picmenu_next.data_source.mixin import PluginMixinNext, plugin_mixins
-from nonebot_plugin_picmenu_next.data_source.models import PMNPluginInfo
+# self_mixins 在帮助首页渲染前运行，但只会传入当前插件自身的信息
+# 示例修改了当前插件的展示信息
+@self_mixins()
+async def _(next_mixin: SelfMixinNext, info: PMNPluginInfo):
+    info = info.model_copy()  # 注意上方 Caution
+    info.description = f"{info.description or ''} 我被 Mixin 修改了！"
+    return await next_mixin(info)
 
 
-@plugin_mixins(priority=10)
-async def sort_by_name(
-    next_mixin: PluginMixinNext,
-    infos: list[PMNPluginInfo],
-) -> list[PMNPluginInfo]:
-    infos = await next_mixin(infos)
-    return sorted(infos, key=lambda x: x.name.casefold())
+# plugin_mixins 在帮助首页渲染前运行，传入所有插件信息
+# 示例中调整了 alconna 插件的展示信息
+@plugin_mixins()
+async def _(next_mixin: PluginMixinNext, infos: list[PMNPluginInfo]):
+    idx = next(
+        i for i, x in enumerate(infos) if x.plugin_id == "nonebot_plugin_alconna"
+    )
+    info = infos[idx].model_copy()  # 注意上方 Caution
+    info.description = f"{info.description or ''} 我被 Mixin 修改了！"
+    infos[idx] = info
+    return await next_mixin(infos)
+
+
+# plugin_detail_mixins 在功能详情页渲染前运行，传入当前正在查看的插件信息
+# 示例中给所有插件的功能详情页用法追加一段提示
+@plugin_detail_mixins()
+async def _(next_mixin: PluginDetailMixinNext, info: PMNPluginInfo):
+    info = info.model_copy()  # 注意上方 Caution
+    info.usage = f"{info.usage or ''}\n\n> 这段内容会出现在所有插件功能详情页。"
+    return await next_mixin(info)
+
+
+# self_detail_mixins 在功能详情页渲染前运行，但只会传入当前插件自身的信息
+# 示例中给当前插件的功能详情页简介追加一段提示
+@self_detail_mixins()
+async def _(next_mixin: PluginDetailMixinNext, info: PMNPluginInfo):
+    info = info.model_copy()  # 注意上方 Caution
+    info.description = f"{info.description or ''}\n\n这段内容只会出现在当前插件功能详情页。"
+    return await next_mixin(info)
 ```
 
 ## 菜单模板

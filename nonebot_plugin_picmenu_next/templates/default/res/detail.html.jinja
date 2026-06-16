@@ -59,8 +59,14 @@
       <div class="index"><span class="no">No.</span>{{ loop.index }}</div>
       <h3>{{ x.func }}</h3>
       <div>
-        <p>触发方式：{{ x.trigger_method | layout(is_md) }}</p>
-        <p>触发条件：{{ x.trigger_condition | layout(is_md) }}</p>
+        <div class="func-meta">
+          <span>触发方式：</span>
+          <div class="md">{{ x.trigger_method | layout(is_md) }}</div>
+        </div>
+        <div class="func-meta">
+          <span>触发条件：</span>
+          <div class="md">{{ x.trigger_condition | layout(is_md) }}</div>
+        </div>
         <div class="md">{{ x.brief_des | layout(is_md) }}</div>
       </div>
     </div>

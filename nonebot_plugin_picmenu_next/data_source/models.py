@@ -11,7 +11,7 @@ from cookit.pyd import (
 )
 from nonebot import get_plugin
 from nonebot.plugin import Plugin
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from ..utils import normalize_plugin_name
 from .pinyin import PinyinChunkSequence
@@ -31,6 +31,8 @@ else:
 
 
 class PMDataItem(CompatModel):
+    _alc_cmd_id: str | None = PrivateAttr(default=None)
+
     func: str
     trigger_method: str
     trigger_condition: str
@@ -41,6 +43,10 @@ class PMDataItem(CompatModel):
     hidden: bool = Field(default=False, alias="pmn_hidden")
     template: str | None = Field(default=None, alias="pmn_template")
 
+    @property
+    def alc_cmd_id(self) -> str | None:
+        return self._alc_cmd_id
+
     @cached_property
     def casefold_func(self) -> str:
         return self.func.casefold()
@@ -50,10 +56,23 @@ class PMDataItem(CompatModel):
         return PinyinChunkSequence.from_raw(self.func)
 
 
+class OptionalPMDataItem(CompatModel):
+    func: str | None = None
+    trigger_method: str | None = None
+    trigger_condition: str | None = None
+    brief_des: str | None = None
+    detail_des: str | None = None
+
+    # extension properties
+    hidden: bool | None = Field(default=None, alias="pmn_hidden")
+    template: str | None = Field(default=None, alias="pmn_template")
+
+
 class PMNData(CompatModel):
     hidden: bool = False
     markdown: bool = False
     template: str | None = None
+    alc_force_enable_detect: bool = False
 
 
 class PMNPluginExtra(CompatModel):

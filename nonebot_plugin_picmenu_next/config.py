@@ -21,6 +21,7 @@ class ConfigModel(BaseModel):
     detail_template: str = "default"
     func_detail_template: str = "default"
     only_superuser_see_hidden: bool = False
+    alconna_global_ext: bool = False
 
 
 config: ConfigModel = get_plugin_config(ConfigModel)

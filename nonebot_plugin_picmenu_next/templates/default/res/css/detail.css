@@ -12,3 +12,19 @@ main {
 .card-grid.functions {
   --grid-columns: 2;
 }
+
+.func-meta {
+  display: block;
+}
+
+.func-meta > span {
+  display: inline;
+}
+
+.func-meta > .md {
+  display: inline;
+}
+
+.func-meta > .md > p {
+  display: inline;
+}

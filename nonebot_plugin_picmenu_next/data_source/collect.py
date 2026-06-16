@@ -13,7 +13,8 @@ from nonebot.plugin import Plugin
 
 from ..config import external_infos_dir, pm_menus_dir
 from ..utils import normalize_plugin_name
-from .mixin import PluginCollectMixinNext, chain_mixins, plugin_collect_mixins
+from .alconna import apply_alconna_command_infos
+from .mixin import chain_mixins, plugin_collect_mixins
 from .models import ExternalPluginInfo, PMNData, PMNPluginExtra, PMNPluginInfo
 
 
@@ -123,7 +124,7 @@ def scan_path(path: Path, suffixes: Iterable[str] | None = None) -> Generator[Pa
             yield child
 
 
-async def collect_menus():
+def collect_menus():
     yaml = None
 
     supported_suffixes = {".json", ".yml", ".yaml", ".toml"}
@@ -194,14 +195,10 @@ async def collect_menus():
     return infos
 
 
-@plugin_collect_mixins(priority=1)
-async def load_user_custom_infos_mixin(
-    next_mixin: PluginCollectMixinNext,
-    infos: list[PMNPluginInfo],
-) -> list[PMNPluginInfo]:
-    external_infos = await collect_menus()
+def apply_user_custom_infos(infos: list[PMNPluginInfo]) -> list[PMNPluginInfo]:
+    external_infos = collect_menus()
     if not external_infos:
-        return await next_mixin(infos)
+        return infos
     logger.info(f"Collected {len(external_infos)} external infos")
 
     infos_map = {x.plugin_id: x for x in infos if x.plugin_id}
@@ -213,7 +210,7 @@ async def load_user_custom_infos_mixin(
             logger.debug(f"Not found `{k}` in infos, will add into")
             infos.append(v.to_plugin_info(k))
 
-    return await next_mixin(infos)
+    return infos
 
 
 async def collect_plugin_infos(plugins: Iterable[Plugin]):
@@ -225,6 +222,9 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
         *(_get(plugin) for plugin in plugins),
     )
     infos = [x for x in infos if x]
+
+    infos = apply_user_custom_infos(infos)
+    infos = apply_alconna_command_infos(infos)
 
     async def final_mixin(infos: list[PMNPluginInfo]):
         return infos

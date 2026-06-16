@@ -171,11 +171,17 @@ main > .main-wrapper {
 
 .md > :nth-child(1) {
   margin-top: 0;
-  padding-top: 0;
 }
 
 .md > :nth-last-child(1) {
   margin-bottom: 0;
+}
+
+.md > :nth-child(1):not(pre) {
+  padding-top: 0;
+}
+
+.md > :nth-last-child(1):not(pre) {
   padding-bottom: 0;
 }
 

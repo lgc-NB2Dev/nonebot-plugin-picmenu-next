@@ -32,6 +32,11 @@
           "anyOf": [{ "type": "string" }, { "type": "null" }],
           "default": null,
           "title": "Template"
+        },
+        "alc_force_enable_detect": {
+          "default": false,
+          "title": "Alc Force Enable Detect",
+          "type": "boolean"
         }
       },
       "title": "PMNData",
@@ -77,7 +82,8 @@
       "default": {
         "hidden": false,
         "markdown": false,
-        "template": null
+        "template": null,
+        "alc_force_enable_detect": false
       }
     }
   },

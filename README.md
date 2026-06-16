@@ -52,6 +52,7 @@ _✨ 新一代的图片帮助插件 ✨_
 
 - ✨ **美观的图片界面**：直观友好的图片界面
 - 🛠️ **PicMenu 兼容**：本插件使用 PicMenu 插件格式的三级菜单（功能详情），兼容 PicMenu 的 `<ft>` 富文本标签（但不太推荐使用）
+- 🧩 **Alconna 集成**：开箱即用地自动探测 Alconna 命令并生成三级菜单，另可通过 `PMN_ALCONNA_GLOBAL_EXT` 启用接管 Alconna 内置帮助参数模式，将帮助输出渲染为图片
 - 🔍 **支持模糊搜索**：支持通过序号或名称查找插件及功能，并提供插件名称的模糊匹配
 - 🔤 **拼音支持**：插件排序与模糊搜索时考虑拼音，提高中文环境下的使用体验
 - 📜 **Markdown 支持**：支持 Markdown 格式的帮助信息展示（需要插件开发者主动适配）
@@ -168,18 +169,19 @@ plugins = [
 
 在 NoneBot2 项目的 `.env` 文件中添加下表中的配置
 
-|                配置项                 | 必填 |  默认值   |              说明              |
-| :-----------------------------------: | :--: | :-------: | :----------------------------: |
-|             **本体配置**              |      |           |                                |
-|         `PMN_INDEX_TEMPLATE`          |  否  | `default` |       首页展示模板的名称       |
-|         `PMN_DETAIL_TEMPLATE`         |  否  | `default` |       插件详情模板的名称       |
-|      `PMN_FUNC_DETAIL_TEMPLATE`       |  否  | `default` |     插件功能详情模板的名称     |
-|    `PMN_ONLY_SUPERUSER_SEE_HIDDEN`    |  否  |  `False`  | 是否仅超级用户可以查看隐藏内容 |
-|           **默认模板配置**            |      |           |                                |
-|          `PMN_DEFAULT_DARK`           |  否  |  `False`  |        是否使用暗色模式        |
-| `PMN_DEFAULT_ENABLE_BUILTIN_CODE_CSS` |  否  |  `True`   |    是否启用内置代码着色 CSS    |
-|     `PMN_DEFAULT_ADDITIONAL_CSS`      |  否  |   `[]`    |     要附加的 CSS 路径列表      |
-|     `PMN_DEFAULT_RENDER_BACKEND`      |  否  |  `None`   | 默认模板使用的 htmlrender 后端 |
+|                配置项                 | 必填 |  默认值   |                   说明                   |
+| :-----------------------------------: | :--: | :-------: | :--------------------------------------: |
+|             **本体配置**              |      |           |                                          |
+|         `PMN_INDEX_TEMPLATE`          |  否  | `default` |            首页展示模板的名称            |
+|         `PMN_DETAIL_TEMPLATE`         |  否  | `default` |            插件详情模板的名称            |
+|      `PMN_FUNC_DETAIL_TEMPLATE`       |  否  | `default` |          插件功能详情模板的名称          |
+|    `PMN_ONLY_SUPERUSER_SEE_HIDDEN`    |  否  |  `False`  |      是否仅超级用户可以查看隐藏内容      |
+|       `PMN_ALCONNA_GLOBAL_EXT`        |  否  |  `False`  | 是否接管 Alconna 帮助输出为 PicMenu 图片 |
+|           **默认模板配置**            |      |           |                                          |
+|          `PMN_DEFAULT_DARK`           |  否  |  `False`  |             是否使用暗色模式             |
+| `PMN_DEFAULT_ENABLE_BUILTIN_CODE_CSS` |  否  |  `True`   |         是否启用内置代码着色 CSS         |
+|     `PMN_DEFAULT_ADDITIONAL_CSS`      |  否  |   `[]`    |          要附加的 CSS 路径列表           |
+|     `PMN_DEFAULT_RENDER_BACKEND`      |  否  |  `None`   |      默认模板使用的 htmlrender 后端      |
 
 ## 🎉 使用
 
@@ -213,6 +215,20 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
 ## 📝 更新日志
+
+### 0.3.0
+
+- 新增 Alconna 集成：
+  - 支持自动探测插件注册的 Alconna 命令，并在插件未声明 `menu_data` 或声明为 `None` 时自动补全三级菜单
+  - 支持通过 `CommandMeta.extra["pmn"]` 覆盖自动探测生成的功能名称、触发方式、触发条件、详细用法等字段
+  - 支持 `extra["pmn"]["alc_force_enable_detect"]` 在已有手写菜单时强制附加 Alconna 自动探测结果
+  - 新增 `PMN_ALCONNA_GLOBAL_EXT` 配置，可接管 Alconna 内置帮助参数输出并渲染为 PicMenu 图片
+- 新增基于插件 `supported_adapters` 的适配器过滤，当前适配器不受支持的插件会在普通帮助菜单中自动隐藏
+- 优化 Alconna 命令帮助的 Markdown 生成格式，并在插件启用 Markdown 且命令未自定义 formatter 时自动使用
+- 修复普通帮助菜单中，插件详情页仍会展示隐藏功能项的问题
+- 修复默认模板 Markdown 渲染中触发方式、触发条件等字段的换行排版问题
+- 完善开发文档，新增 Alconna 自动探测、禁用探测、强制附加探测结果与 mixin 注意事项说明
+- 补充 Alconna 自动探测与适配器过滤相关测试
 
 ### 0.2.0
 
