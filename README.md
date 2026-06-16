@@ -246,8 +246,6 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 - 优化 Alconna 命令帮助的 Markdown 生成格式，并在插件启用 Markdown 且命令未自定义 formatter 时自动使用
 - 修复普通帮助菜单中，插件详情页仍会展示隐藏功能项的问题
 - 修复默认模板 Markdown 渲染中触发方式、触发条件等字段的换行排版问题
-- 完善开发文档，新增 Alconna 自动探测、禁用探测、强制附加探测结果与 mixin 注意事项说明
-- 补充 Alconna 自动探测与适配器过滤相关测试
 
 ### 0.2.0
 
