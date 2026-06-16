@@ -11,6 +11,7 @@ from arclet.alconna import (
     TextFormatter,
     command_manager,
 )
+from arclet.alconna.formatter import Trace
 from arclet.alconna.typing import AllParam, InnerShortcutArgs
 from cookit.loguru import warning_suppress
 from cookit.pyd import type_validate_python
@@ -21,7 +22,6 @@ from .models import OptionalPMDataItem, PMDataItem, PMNPluginInfo
 
 if TYPE_CHECKING:
     from arclet.alconna import Alconna
-    from arclet.alconna.formatter import Trace
 
 ALCONNA_EXTRA_KEY = "pmn"
 
@@ -40,13 +40,90 @@ def inline_code(text: object) -> str:
 
 class PMNMarkdownTextFormatter(TextFormatter):
     def format(self, trace: "Trace") -> str:
-        parts: list[str] = []
-        if description := trace.head.get("description"):
-            parts.append(description)
+        return self.format_trace(trace, [])
 
-        command = self.command(trace)
+    def format_node(self, parts: list | None = None):
+        return "\n".join(
+            self.format_trace(v, [])
+            if not (normalized_parts := self.normalize_parts(v, parts))
+            else self.format_subcommand_node(v, normalized_parts)
+            for v in self.data.values()
+        )
+
+    def normalize_parts(self, trace: "Trace", parts: list | None = None) -> list[str]:
+        cache = trace.body
+        normalized_parts: list[str] = []
+        for part in (str(x) for x in (parts or []) if str(x)):
+            node = self.find_subcommand(cache, [part])
+            if node is None:
+                continue
+            matched, _ = node
+            normalized_parts.append(part)
+            cache = matched.options
+        return normalized_parts
+
+    def format_subcommand_node(self, trace: "Trace", parts: list[str]) -> str:
+        found = self.find_subcommand(trace.body, parts)
+        if found is None:
+            return self.format_trace(trace, [])
+        node, alias_parts = found
+        primary_prefix = parts
+        alias_prefix = alias_parts
+        if alias_prefix == primary_prefix:
+            alias_prefix = None
+        return self.format_trace(
+            Trace(
+                {
+                    "name": trace.head["name"],
+                    "description": (
+                        "" if node.help_text == node.dest else node.help_text
+                    ),
+                    "usage": None,
+                    "example": None,
+                },
+                node.args,
+                trace.separators,
+                node.options,
+                {},
+            ),
+            primary_prefix,
+            alias_prefix,
+        )
+
+    def find_subcommand(
+        self,
+        nodes: list[Option | Subcommand],
+        parts: list[str],
+    ) -> tuple[Subcommand, list[str]] | None:
+        if not parts:
+            return None
+        current, *remaining = parts
+        for node in nodes:
+            if not isinstance(node, Subcommand) or current not in node.aliases:
+                continue
+            alias = self.subcommand_alias(node)
+            if not remaining:
+                return node, [alias]
+            if found := self.find_subcommand(node.options, remaining):
+                child, child_aliases = found
+                return child, [alias, *child_aliases]
+        return None
+
+    def format_trace(
+        self,
+        trace: "Trace",
+        path_prefix: list[str],
+        alias_prefix: list[str] | None = None,
+    ) -> str:
+        parts: list[str] = []
+
+        command = self.command(trace, path_prefix)
         if command:
-            parts.extend(("", "**指令**", "", fenced_code(command)))
+            # parts.extend(("", "**指令**", "", fenced_code(command)))
+            parts.append(fenced_code(command))
+
+        if description := trace.head.get("description"):
+            parts.extend(("", description))
 
         if usage := trace.head.get("usage"):
             parts.extend(("", "**用法**", "", fenced_code(usage)))
@@ -54,7 +131,7 @@ class PMNMarkdownTextFormatter(TextFormatter):
         if args := self.args(trace.args):
             parts.extend(("", "**参数**", "", args))
 
-        if body := self.body(trace.body):
+        if body := self.body(trace.body, path_prefix, alias_prefix):
             parts.extend(("", body))
 
         if example := trace.head.get("example"):
@@ -65,9 +142,10 @@ class PMNMarkdownTextFormatter(TextFormatter):
 
         return "\n".join(parts).strip()
 
-    def command(self, trace: "Trace") -> str:
+    def command(self, trace: "Trace", path_prefix: list[str] | None = None) -> str:
         params = self.parameters(trace.args)
-        return f"{trace.head['name']}{trace.separators[0]}{params}".strip()
+        name = " ".join((trace.head["name"], *(path_prefix or [])))
+        return f"{name}{trace.separators[0]}{params}".strip()
 
     def param(self, parameter: Arg) -> str:
         name = parameter.name
@@ -101,46 +179,128 @@ class PMNMarkdownTextFormatter(TextFormatter):
         for arg in args.argument:
             if arg.name.startswith("_key_"):
                 continue
-            details = []
+            main_details = []
+            extra_details = []
             if arg.value is not ANY and str(arg.value).strip("'\"") != arg.name:
-                details.append(f"类型：{inline_code(arg.value)}")
-            details.append("可选" if arg.optional else "必填")
+                main_details.append(f"类型 {inline_code(arg.value)}")
+            if arg.optional:
+                main_details.append("可选")
             if arg.field.display is not Empty:
-                details.append(f"默认值：{inline_code(arg.field.display)}")
+                extra_details.append(f"默认值 {inline_code(arg.field.display)}")
             if arg.notice:
-                details.append(arg.notice)
-            lines.append(f"- {inline_code(arg.name)}：{'；'.join(details)}")
+                extra_details.append(arg.notice)
+            details = "，".join(main_details)
+            if extra_details:
+                details = "；".join(x for x in (details, *extra_details) if x)
+            lines.append(f"- {inline_code(arg.name)}：{details}")
         return "\n".join(lines)
 
-    def option_signature(self, node: Option | Subcommand, prefix: str = "") -> str:
-        aliases = list(dict.fromkeys([node.name, *sorted(node.aliases)]))
-        alias_text = " / ".join(aliases)
+    def option_signature(self, node: Option) -> str:
+        aliases = [node.name, *[x for x in sorted(node.aliases) if x != node.name]]
+        alias_text = "│".join(inline_code(x) for x in aliases)
+        params = self.parameters(node.args)
+        return f"{alias_text} {inline_code(params)}" if params else alias_text
+
+    def format_option(self, node: Option, indent: int = 0) -> str:
+        help_text = "无说明" if node.help_text == node.dest else node.help_text
+        prefix = "  " * indent
+        if help_text == "无说明":
+            return f"{prefix}- {self.option_signature(node)}"
+        return f"{prefix}- {self.option_signature(node)}：{help_text}"
+
+    def subcommand_signature(self, name: str, node: Subcommand) -> str:
         params = self.parameters(node.args)
         sep = next(iter(node.separators)) if params else ""
-        return f"{prefix}{alias_text}{sep}{params}".strip()
+        return f"{name}{sep}{params}".strip()
 
-    def format_option(self, node: Option, prefix: str = "") -> str:
-        help_text = "无说明" if node.help_text == node.dest else node.help_text
-        return f"- {inline_code(self.option_signature(node, prefix))}：{help_text}"
+    def subcommand_params(self, node: Subcommand) -> str:
+        params = self.parameters(node.args)
+        return f" {inline_code(params)}" if params else ""
 
-    def format_subcommand(self, node: Subcommand, prefix: str = "") -> list[str]:
-        signature = self.option_signature(node, prefix)
+    def subcommand_aliases(self, node: Subcommand) -> list[str]:
+        return [x for x in sorted(node.aliases) if x != node.name]
+
+    def subcommand_alias(self, node: Subcommand) -> str:
+        return next(iter(self.subcommand_aliases(node)), node.name)
+
+    def subcommand_names_text(self, node: Subcommand) -> str:
+        names = [node.name, *self.subcommand_aliases(node)]
+        return "│".join(inline_code(x) for x in names)
+
+    def format_subcommand(
+        self,
+        node: Subcommand,
+        primary_prefix: list[str] | None = None,
+        alias_prefix: list[str] | None = None,
+        indent: int = 0,
+        expand: bool = True,
+        inline_description: bool | None = None,
+    ) -> list[str]:
+        del primary_prefix, alias_prefix
         help_text = "无说明" if node.help_text == node.dest else node.help_text
-        lines = [f"- {inline_code(signature)}：{help_text}"]
-        next_prefix = f"{signature} "
-        for child in node.options:
-            if isinstance(child, Subcommand):
-                lines.extend(self.format_subcommand(child, next_prefix))
-            elif isinstance(child, Option) and child.name not in self.ignore_names:
-                lines.append(self.format_option(child, next_prefix))
+        prefix = "  " * indent
+        inline_description = (
+            expand if inline_description is None else inline_description
+        )
+        nested_subcommands: list[str] = []
+        nested_options: list[str] = []
+        if expand:
+            for child in node.options:
+                if isinstance(child, Subcommand):
+                    nested_subcommands.extend(
+                        self.format_subcommand(
+                            child,
+                            None,
+                            None,
+                            indent + 1,
+                            expand=False,
+                            inline_description=False,
+                        ),
+                    )
+                elif isinstance(child, Option) and child.name not in self.ignore_names:
+                    nested_options.append(self.format_option(child, indent + 1))
+
+        signature = f"{self.subcommand_names_text(node)}{self.subcommand_params(node)}"
+        has_nested_items = bool(nested_subcommands or nested_options)
+        if inline_description or has_nested_items:
+            lines = [
+                f"{prefix}- {signature}：{help_text}{'  ' if has_nested_items else ''}",
+            ]
+        else:
+            lines = [
+                f"{prefix}- {signature}  ",
+                f"{prefix}  {help_text}{'  ' if has_nested_items else ''}",
+            ]
+        if not expand:
+            return lines
+
+        nested_prefix = "  " * (indent + 1)
+        if nested_subcommands:
+            lines.append(f"{nested_prefix}该命令下可用的子命令有：")
+            lines.extend(nested_subcommands)
+        if nested_options:
+            lines.append(f"{nested_prefix}该命令下可用的选项有：  ")
+            lines.extend(nested_options)
         return lines
 
-    def body(self, parts: list[Option | Subcommand]) -> str:
+    def body(
+        self,
+        parts: list[Option | Subcommand],
+        path_prefix: list[str] | None = None,
+        alias_prefix: list[str] | None = None,
+    ) -> str:
         subcommands: list[str] = []
         options: list[str] = []
         for node in parts:
             if isinstance(node, Subcommand):
-                subcommands.extend(self.format_subcommand(node))
+                subcommands.extend(
+                    self.format_subcommand(
+                        node,
+                        path_prefix,
+                        alias_prefix or path_prefix,
+                        inline_description=not path_prefix,
+                    ),
+                )
             elif isinstance(node, Option) and node.name not in self.ignore_names:
                 options.append(self.format_option(node))
 
@@ -176,9 +336,15 @@ def get_alconna_plugin_id(command: "Alconna") -> str | None:
     return getattr(source, "plugin_id", None) if source else None
 
 
-def format_alconna_help_text(command: "Alconna", markdown: bool = False) -> str:
+def format_alconna_help_text(
+    command: "Alconna",
+    markdown: bool = False,
+    parts: list[str] | None = None,
+) -> str:
     if markdown and type(command.formatter) is TextFormatter:
-        return PMNMarkdownTextFormatter().add(command).format_node()
+        return PMNMarkdownTextFormatter().add(command).format_node(parts)
+    if parts:
+        return command.formatter.format_node(parts)
     return command.get_help()
 
 

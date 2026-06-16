@@ -1,6 +1,21 @@
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 
-from arclet.alconna import Alconna, CommandMeta, TextFormatter, command_manager
+from arclet.alconna import (
+    Alconna,
+    Arg,
+    Args,
+    CommandMeta,
+    Option,
+    Subcommand,
+    TextFormatter,
+    command_manager,
+    store_true,
+)
+from nonebot.adapters import Bot, Event
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def teardown_function():
@@ -259,10 +274,290 @@ def test_apply_alconna_command_infos_uses_markdown_formatter(
 
     assert result[0].pm_data is not None
     assert result[0].pm_data[0].trigger_method == "`markdown-picmenu`"
-    assert result[0].pm_data[0].detail_des.startswith("Markdown 命令")
-    assert "**指令**" in result[0].pm_data[0].detail_des
+    assert "Markdown 命令" in result[0].pm_data[0].detail_des
     assert "```text" in result[0].pm_data[0].detail_des
     assert "```shell" in result[0].pm_data[0].detail_des
+
+
+def test_markdown_formatter_displays_direct_subcommand_aliases_readably(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "sub-picmenu",
+        Subcommand(
+            "user|用户",
+            Subcommand(
+                "add|新增",
+                Args["name", str],
+                Option("--role|-r", Args["role", str], help_text="用户角色。"),
+                help_text="新增一个用户。",
+            ),
+            help_text="用户相关命令。",
+        ),
+        meta=CommandMeta(usage="sub-picmenu user add <name>"),
+    )
+
+    detail_des = format_alconna_help_text(command, markdown=True)
+
+    assert (
+        "- `user`│`用户`：用户相关命令。  \n"
+        "  该命令下可用的子命令有：\n"
+        "  - `add`│`新增` `<name: str>`  \n"
+        "    新增一个用户。" in detail_des
+    )
+    assert "- `user`│`用户`\n  用户相关命令。" not in detail_des
+    assert "- `--role <role: str>`" not in detail_des
+    assert "`user / 用户 add / 新增" not in detail_des
+
+
+def test_markdown_formatter_can_format_subcommand_node(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "sub-node-picmenu",
+        Subcommand(
+            "user|用户",
+            Subcommand(
+                "add|新增",
+                Args["name", str],
+                Option("--role|-r", Args["role", str], help_text="用户角色。"),
+                help_text="新增一个用户。",
+            ),
+            help_text="用户相关命令。",
+        ),
+    )
+
+    detail_des = format_alconna_help_text(command, markdown=True, parts=["user"])
+
+    assert "```text\nsub-node-picmenu user\n```" in detail_des
+    assert (
+        "- `add`│`新增` `<name: str>`：新增一个用户。  \n"
+        "  该命令下可用的选项有：  \n" in detail_des
+    )
+    assert "- `add`│`新增` `<name: str>`  \n  新增一个用户。" not in detail_des
+    assert "- `--role`│`-r` `<role: str>`：用户角色。" in detail_des
+    assert "- `--role <role: str>`（别名：`-r`）\n    用户角色。" not in detail_des
+
+
+def test_markdown_formatter_formats_nested_subcommands_consistently(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "sub-nested-picmenu",
+        Subcommand(
+            "project|项目",
+            Subcommand(
+                "issue|议题",
+                Subcommand(
+                    "open|打开",
+                    Args["title", str],
+                    help_text="打开一个议题。",
+                ),
+                Subcommand(
+                    "close|关闭",
+                    help_text="关闭一个议题。",
+                ),
+                help_text="议题相关三级命令。",
+            ),
+            help_text="项目相关二级命令。",
+        ),
+    )
+
+    root_detail_des = format_alconna_help_text(command, markdown=True)
+    project_detail_des = format_alconna_help_text(
+        command,
+        markdown=True,
+        parts=["project"],
+    )
+
+    expected = (
+        "- `issue`│`议题`：议题相关三级命令。  \n"
+        "  该命令下可用的子命令有：\n"
+        "  - `open`│`打开` `<title: str>`  \n"
+        "    打开一个议题。\n"
+        "  - `close`│`关闭`  \n"
+        "    关闭一个议题。"
+    )
+    assert (
+        "- `project`│`项目`：项目相关二级命令。  \n"
+        "  该命令下可用的子命令有：\n"
+        "  - `issue`│`议题`  \n"
+        "    议题相关三级命令。" in root_detail_des
+    )
+    assert expected in project_detail_des
+    assert "- `issue`│`议题`  \n  议题相关三级命令。" not in project_detail_des
+
+
+def test_markdown_formatter_formats_args_and_options_inline(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "inline-picmenu",
+        Args(
+            Arg("abc?", int, notice="AABBCC"),
+            Arg("name", str),
+            Arg("name2", str, notice="AABBCC"),
+        ),
+        Option("--abc|-a", action=store_true),
+        Option("--def|-d", action=store_true, help_text="AAA"),
+        Option("--upper", Args["u", int], help_text="AAA"),
+        Option("--xyz|-x", Args["xyz", str], help_text="AAA"),
+    )
+
+    detail_des = format_alconna_help_text(command, markdown=True)
+
+    assert (
+        "**参数**\n"
+        "\n"
+        "- `abc`：类型 `int`，可选；AABBCC\n"
+        "- `name`：类型 `str`\n"
+        "- `name2`：类型 `str`；AABBCC" in detail_des
+    )
+    assert (
+        "**选项**\n"
+        "\n"
+        "- `--abc`│`-a`\n"
+        "- `--def`│`-d`：AAA\n"
+        "- `--upper` `<u: int>`：AAA\n"
+        "- `--xyz`│`-x` `<xyz: str>`：AAA" in detail_des
+    )
+
+
+def test_markdown_formatter_accepts_alconna_help_parts_with_command_name(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "sub-node-picmenu",
+        Subcommand(
+            "user|用户",
+            Subcommand(
+                "add|新增",
+                Args["name", str],
+                help_text="新增一个用户。",
+            ),
+            help_text="用户相关命令。",
+        ),
+        meta=CommandMeta(description="根命令说明。"),
+    )
+
+    detail_des = format_alconna_help_text(
+        command,
+        markdown=True,
+        parts=["sub-node-picmenu", "user"],
+    )
+
+    assert "用户相关命令。" in detail_des
+    assert "根命令说明。" not in detail_des
+    assert "sub-node-picmenu user" in detail_des
+
+
+def test_markdown_formatter_accepts_slashed_root_help_parts(
+    picmenu_plugin: object,  # noqa: ARG001
+) -> None:
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        format_alconna_help_text,
+    )
+
+    command = Alconna(
+        "/probe-sub",
+        Subcommand(
+            "user|用户",
+            help_text="用户相关命令。",
+        ),
+        meta=CommandMeta(description="根命令说明。"),
+    )
+
+    detail_des = format_alconna_help_text(
+        command,
+        markdown=True,
+        parts=["/probe-sub"],
+    )
+
+    assert "根命令说明。" in detail_des
+    assert "- `user`│`用户`：用户相关命令。" in detail_des
+
+
+def test_help_extension_replaces_default_formatter_from_registry(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from nonebot_plugin_picmenu_next import __main__
+    from nonebot_plugin_picmenu_next.data_source.alconna import PMNMarkdownTextFormatter
+    from nonebot_plugin_picmenu_next.data_source.models import PMNData, PMNPluginInfo
+
+    command = Alconna("ext-markdown-picmenu")
+    command.meta.extra["matcher.source"] = SimpleNamespace(plugin_id="md_plugin")
+    ext = __main__.PMNHelpExtension()
+
+    monkeypatch.setattr(
+        __main__,
+        "get_infos",
+        lambda: [
+            PMNPluginInfo(
+                name="Markdown 插件",
+                plugin_id="md_plugin",
+                pmn=PMNData(markdown=True),
+            ),
+        ],
+    )
+
+    assert type(command.formatter) is TextFormatter
+    ext.post_init(command)
+    assert isinstance(command.formatter, PMNMarkdownTextFormatter)
+
+
+def test_help_extension_retries_formatter_replace_until_registry_ready(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from nonebot_plugin_picmenu_next import __main__
+    from nonebot_plugin_picmenu_next.data_source.alconna import PMNMarkdownTextFormatter
+    from nonebot_plugin_picmenu_next.data_source.models import PMNData, PMNPluginInfo
+
+    command = Alconna("ext-late-markdown-picmenu")
+    command.meta.extra["matcher.source"] = SimpleNamespace(plugin_id="late_md_plugin")
+    ext = __main__.PMNHelpExtension()
+
+    monkeypatch.setattr(__main__, "get_infos", list)
+    ext.post_init(command)
+    assert type(command.formatter) is TextFormatter
+
+    monkeypatch.setattr(
+        __main__,
+        "get_infos",
+        lambda: [
+            PMNPluginInfo(
+                name="Late Markdown 插件",
+                plugin_id="late_md_plugin",
+                pmn=PMNData(markdown=True),
+            ),
+        ],
+    )
+    ext.validate(
+        cast("Bot", SimpleNamespace()),
+        cast("Event", SimpleNamespace(get_type=lambda: "message")),
+    )
+    assert isinstance(command.formatter, PMNMarkdownTextFormatter)
 
 
 def test_apply_alconna_command_infos_prefers_custom_formatter(

@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import TypeVar, cast, overload
 from typing_extensions import override
 
-from arclet.alconna import Alconna, Arg, Args, CommandMeta, Option, store_true
+from arclet.alconna import (
+    Alconna,
+    Arg,
+    Args,
+    CommandMeta,
+    Option,
+    TextFormatter,
+    store_true,
+)
 from cookit.pyd import model_copy
 from loguru import logger
 from nonebot.adapters import Adapter as BaseAdapter, Bot as BaseBot, Event as BaseEvent
@@ -17,7 +25,7 @@ from thefuzz import process
 
 from .config import config
 from .data_source import get_infos
-from .data_source.alconna import get_alconna_plugin_id
+from .data_source.alconna import PMNMarkdownTextFormatter, get_alconna_plugin_id
 from .data_source.mixin import resolve_detail_mixin, resolve_main_mixin
 from .data_source.models import PinyinChunkSequence, PMDataItem, PMNPluginInfo
 from .templates import detail_templates, func_detail_templates, index_templates
@@ -213,6 +221,7 @@ async def render_menu(
     *,
     plugin_id: str | None = None,
     alc_cmd_id: str | None = None,
+    alc_detail_des: str | None = None,
     show_hidden: bool = False,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
 
@@ -223,6 +232,7 @@ async def render_menu(
     q_function: str | None = None,
     plugin_id: str | None = None,
     alc_cmd_id: str | None = None,
+    alc_detail_des: str | None = None,
     show_hidden: bool = False,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]:
     infos = filter_unsupported_adapters(get_infos(), bot.adapter)
@@ -274,6 +284,8 @@ async def render_menu(
         return None, info, None
 
     func_index, func = r
+    if alc_detail_des is not None:
+        func = model_copy(func, update={"detail_des": alc_detail_des})
     return (
         await func_detail_templates.get(
             func.template,
@@ -330,8 +342,14 @@ async def _(
     ).finish(reply_to=True)
 
 
+# Alconna formats `-h/--help` before `output_converter`, and that converter does
+# not receive the current Arparma. To avoid reparsing help text, replace the
+# command formatter with PicMenu's markdown formatter before parsing. `post_init`
+# is the earliest chance; if plugin ownership/registry data is not ready there,
+# retry in `validate`, which runs before help parsing.
 class PMNHelpExtension(Extension):
     command: "Alconna | None" = None
+    _formatter_checked: bool = False
 
     @property
     def priority(self) -> int:
@@ -340,6 +358,32 @@ class PMNHelpExtension(Extension):
     @property
     def id(self) -> str:
         return "picmenu-next-help"
+
+    def _ensure_markdown_formatter(self) -> None:
+        if self._formatter_checked or not self.command:
+            return
+        plugin_id = get_alconna_plugin_id(self.command)
+        if not plugin_id:
+            return
+        info = next((x for x in get_infos() if x.plugin_id == plugin_id), None)
+        if info is None:
+            return
+        self._formatter_checked = True
+        if (nm := (not info.pmn.markdown)) or (
+            type(self.command.formatter) is not TextFormatter
+        ):
+            logger.debug(
+                f"Markdown formatter set skipped for command {self.command.path}"
+                f" ({'Does not support markdown' if nm else 'Already has custom formatter'})",
+            )
+            return
+        self.command.formatter = PMNMarkdownTextFormatter().add(self.command)
+        logger.debug(f"Markdown formatter applied to command {self.command.path}")
+
+    @override
+    def validate(self, bot: BaseBot, event: BaseEvent) -> bool:
+        self._ensure_markdown_formatter()
+        return super().validate(bot, event)
 
     @override
     async def output_converter(
@@ -357,6 +401,7 @@ class PMNHelpExtension(Extension):
                 bot,
                 plugin_id=plugin_id,
                 alc_cmd_id=self.command.path,
+                alc_detail_des=content,
             )
             if msg:
                 return msg
@@ -365,6 +410,7 @@ class PMNHelpExtension(Extension):
     @override
     def post_init(self, alc: "Alconna") -> None:
         self.command = alc
+        self._ensure_markdown_formatter()
 
 
 if config.alconna_global_ext:
