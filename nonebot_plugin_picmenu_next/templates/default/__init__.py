@@ -97,11 +97,13 @@ async def render(template: str, **kwargs):
 async def render_index(
     infos: list[PMNPluginInfo],
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     return await render(
         "index.html.jinja",
         infos=infos,
         showing_hidden=showing_hidden,
+        user_can_see_hidden=user_can_see_hidden,
     )
 
 
@@ -110,12 +112,14 @@ async def render_detail(
     info: PMNPluginInfo,
     info_index: int,
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     return await render(
         "detail.html.jinja",
         info=info,
         info_index=info_index,
         showing_hidden=showing_hidden,
+        user_can_see_hidden=user_can_see_hidden,
     )
 
 
@@ -124,8 +128,9 @@ async def render_func_detail(
     info: PMNPluginInfo,
     info_index: int,
     func: PMDataItem,
-    func_index: int,
+    func_index: int | None,
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     return await render(
         "detail.html.jinja",
@@ -134,4 +139,5 @@ async def render_func_detail(
         func=func,
         func_index=func_index,
         showing_hidden=showing_hidden,
+        user_can_see_hidden=user_can_see_hidden,
     )

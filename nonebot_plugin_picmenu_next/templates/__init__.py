@@ -17,6 +17,7 @@ class IndexTemplateHandler(HasNameProtocol, Protocol):
         self,
         infos: list[PMNPluginInfo],
         showing_hidden: bool,
+        user_can_see_hidden: bool | None,
     ) -> UniMessage: ...
 
 
@@ -26,6 +27,7 @@ class DetailTemplateHandler(HasNameProtocol, Protocol):
         info: PMNPluginInfo,
         info_index: int,
         showing_hidden: bool,
+        user_can_see_hidden: bool | None,
     ) -> UniMessage: ...
 
 
@@ -35,8 +37,9 @@ class FuncDetailTemplateHandler(HasNameProtocol, Protocol):
         info: PMNPluginInfo,
         info_index: int,
         func: PMDataItem,
-        func_index: int,
+        func_index: int | None,
         showing_hidden: bool,
+        user_can_see_hidden: bool | None,
     ) -> UniMessage: ...
 
 

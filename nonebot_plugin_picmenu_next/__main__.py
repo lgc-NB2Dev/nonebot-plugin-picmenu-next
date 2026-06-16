@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
-from typing import TypeVar, cast, overload
+from typing import TypeVar, overload
 from typing_extensions import override
 
 from arclet.alconna import (
@@ -25,7 +25,11 @@ from thefuzz import process
 
 from .config import config
 from .data_source import get_infos
-from .data_source.alconna import PMNMarkdownTextFormatter, get_alconna_plugin_id
+from .data_source.alconna import (
+    PMNMarkdownTextFormatter,
+    generate_alconna_menu_item,
+    get_alconna_plugin_id,
+)
 from .data_source.mixin import resolve_detail_mixin, resolve_main_mixin
 from .data_source.models import PinyinChunkSequence, PMDataItem, PMNPluginInfo
 from .templates import detail_templates, func_detail_templates, index_templates
@@ -205,9 +209,18 @@ def filter_unsupported_adapters(
     ]
 
 
+async def can_user_see_hidden(bot: BaseBot, ev: BaseEvent) -> bool:
+    if not config.only_superuser_see_hidden:
+        return True
+    with suppress(Exception):
+        return await SUPERUSER(bot, ev)
+    return False
+
+
 @overload
 async def render_menu(
     bot: BaseBot,
+    ev: BaseEvent,
     *,
     q_plugin: str | None = None,
     q_function: str | None = None,
@@ -218,9 +231,11 @@ async def render_menu(
 @overload
 async def render_menu(
     bot: BaseBot,
+    ev: BaseEvent,
     *,
     plugin_id: str | None = None,
     alc_cmd_id: str | None = None,
+    alc_command: Alconna | None = None,
     alc_detail_des: str | None = None,
     show_hidden: bool = False,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
@@ -228,10 +243,12 @@ async def render_menu(
 
 async def render_menu(
     bot: BaseBot,
+    ev: BaseEvent,
     q_plugin: str | None = None,
     q_function: str | None = None,
     plugin_id: str | None = None,
     alc_cmd_id: str | None = None,
+    alc_command: Alconna | None = None,
     alc_detail_des: str | None = None,
     show_hidden: bool = False,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]:
@@ -242,6 +259,8 @@ async def render_menu(
     if not infos:
         return None, None, None
 
+    user_can_see_hidden = await can_user_see_hidden(bot, ev) if show_hidden else None
+
     if plugin_id:
         r = next(
             ((i, x) for i, x in enumerate(infos) if x.plugin_id == plugin_id), None
@@ -249,7 +268,11 @@ async def render_menu(
     elif q_plugin:
         r = await query_plugin(infos, q_plugin)
     else:
-        return await index_templates.get()(infos, show_hidden), None, None
+        return (
+            await index_templates.get()(infos, show_hidden, user_can_see_hidden),
+            None,
+            None,
+        )
 
     if not r:
         return None, None, None
@@ -263,21 +286,23 @@ async def render_menu(
         return (
             await detail_templates.get(
                 info.pmn.template,
-            )(info, info_index, show_hidden),
+            )(info, info_index, show_hidden, user_can_see_hidden),
             info,
             None,
         )
 
-    pm_data = info.pm_data
-    if not pm_data:
-        return None, info, None
-
     if alc_cmd_id:
+        pm_data = info.pm_data or []
         r = next(
             ((i, x) for i, x in enumerate(pm_data) if x.alc_cmd_id == alc_cmd_id), None
         )
+        if (not r) and alc_command and show_hidden:
+            r = (None, generate_alconna_menu_item(alc_command, info.pmn.markdown))
     else:
         assert q_function is not None
+        pm_data = info.pm_data
+        if not pm_data:
+            return None, info, None
         r = await query_func_detail(pm_data, q_function)
 
     if not r:
@@ -289,7 +314,7 @@ async def render_menu(
     return (
         await func_detail_templates.get(
             func.template,
-        )(info, info_index, func, func_index, show_hidden),
+        )(info, info_index, func, func_index, show_hidden, user_can_see_hidden),
         info,
         func,
     )
@@ -317,6 +342,7 @@ async def _(
 
     msg, info, func = await render_menu(
         bot,
+        ev,
         q_plugin=(qp := q_plugin.result),
         q_function=(qf := q_function.result),
         show_hidden=show_hidden,
@@ -396,15 +422,31 @@ class PMNHelpExtension(Extension):
             and self.command
             and (plugin_id := get_alconna_plugin_id(self.command))
         ):
-            bot = cast("BaseBot", await self.inject(("bot", BaseBot)))
-            msg, _, _ = await render_menu(
+            bot = await self.inject(("bot", BaseBot))
+            ev = await self.inject(("event", BaseEvent))
+
+            msg, p, _ = await render_menu(
                 bot,
+                ev,
                 plugin_id=plugin_id,
                 alc_cmd_id=self.command.path,
+                alc_command=self.command,
                 alc_detail_des=content,
             )
+            if (not msg) and (not p):
+                msg, _, _ = await render_menu(
+                    bot,
+                    ev,
+                    plugin_id=plugin_id,
+                    alc_cmd_id=self.command.path,
+                    alc_command=self.command,
+                    alc_detail_des=content,
+                    show_hidden=True,
+                )
+
             if msg:
                 return msg
+
         return await super().output_converter(output_type, content)
 
     @override

@@ -47,11 +47,13 @@
 <div class="inner-flex">
   <div>
     <h2 class="deco">功能</h2>
+    {% if (not showing_hidden) or user_can_see_hidden -%}
     <p>
       发送
       <b>{{ cfg.pfx }}帮助{% if showing_hidden %} -H{% endif %} {{ info_index + 1 }} 功能名称或序号</b>
       获取关于某插件的更多信息
     </p>
+    {% endif -%}
   </div>
   <div class="card-grid functions">
     {% for x in info.pm_data -%}

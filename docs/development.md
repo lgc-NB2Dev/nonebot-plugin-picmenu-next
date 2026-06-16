@@ -281,6 +281,7 @@ from nonebot_plugin_picmenu_next.templates import (
 async def render_index(
     infos: list[PMNPluginInfo],
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     text = "\n".join(f"{i}. {info.name}" for i, info in enumerate(infos, 1))
     return UniMessage.text(text)
@@ -291,6 +292,7 @@ async def render_detail(
     info: PMNPluginInfo,
     info_index: int,
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     return UniMessage.text(f"{info.name}\n\n{info.description or ''}")
 
@@ -300,8 +302,9 @@ async def render_func_detail(
     info: PMNPluginInfo,
     info_index: int,
     func: PMDataItem,
-    func_index: int,
+    func_index: int | None,
     showing_hidden: bool,
+    user_can_see_hidden: bool | None,
 ) -> UniMessage:
     return UniMessage.text(f"{info.name} > {func.func}\n\n{func.detail_des}")
 ```
@@ -309,5 +312,9 @@ async def render_func_detail(
 三个模板注册器互相独立，通常建议使用同一个模板名分别注册首页、插件详情页、功能详情页。用户可通过 `PMN_INDEX_TEMPLATE`、`PMN_DETAIL_TEMPLATE`、`PMN_FUNC_DETAIL_TEMPLATE` 设置默认模板。
 
 单个插件也可以通过 `extra["pmn"]["template"]` 指定详情页模板，单个功能可以通过 `pmn_template` 指定功能详情页模板。
+
+`func_index` 表示当前功能在插件功能列表中的 0 基序号；当功能详情来自 Alconna `-h/--help` 接管时，如果当前命令没有对应的已注册菜单项，PicMenu Next 会临时生成一个功能项，此时 `func_index` 为 `None`。
+
+`user_can_see_hidden` 表示当前用户是否有权限查看隐藏内容；仅当 `showing_hidden` 为 `True` 时会计算该值，否则为 `None`。如果它为 `False`，在当前版本下可以确定这个渲染请求的来源是 Alconna 扩展。模板可以用它决定是否展示继续使用 `-H/--show-hidden` 的提示文本。
 
 模板实现本身是黑盒接口：可以输出图片，也可以输出文字；可以使用 htmlrender，也可以使用其它渲染方式。若模板依赖特定渲染后端，应在模板实现内部自行检查并抛出清晰错误。
