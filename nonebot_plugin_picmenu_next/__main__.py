@@ -425,15 +425,9 @@ class PMNHelpExtension(Extension):
             bot = await self.inject(("bot", BaseBot))
             ev = await self.inject(("event", BaseEvent))
 
-            msg, p, _ = await render_menu(
-                bot,
-                ev,
-                plugin_id=plugin_id,
-                alc_cmd_id=self.command.path,
-                alc_command=self.command,
-                alc_detail_des=content,
-            )
-            if (not msg) and (not p):
+            msg = None
+            show_hidden = False
+            for _ in range(2):
                 msg, _, _ = await render_menu(
                     bot,
                     ev,
@@ -441,11 +435,11 @@ class PMNHelpExtension(Extension):
                     alc_cmd_id=self.command.path,
                     alc_command=self.command,
                     alc_detail_des=content,
-                    show_hidden=True,
+                    show_hidden=show_hidden,
                 )
-
-            if msg:
-                return msg
+                if msg:
+                    return msg
+                show_hidden = True
 
         return await super().output_converter(output_type, content)
 

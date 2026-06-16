@@ -650,12 +650,13 @@ async def test_help_extension_falls_back_when_plugin_missing(
     assert msg.extract_plain_text() == "fallback help"
 
 
-async def test_help_extension_falls_back_when_visible_func_missing(
+async def test_help_extension_generates_current_command_when_visible_func_missing(
     picmenu_plugin: object,  # noqa: ARG001
     monkeypatch: "pytest.MonkeyPatch",
 ) -> None:
+    from nonebot_plugin_alconna.uniseg import UniMessage
     from nonebot_plugin_picmenu_next import __main__
-    from nonebot_plugin_picmenu_next.data_source.models import PMNPluginInfo
+    from nonebot_plugin_picmenu_next.data_source.models import PMDataItem, PMNPluginInfo
 
     command = Alconna(
         "visible-missing-func-picmenu",
@@ -667,6 +668,24 @@ async def test_help_extension_falls_back_when_visible_func_missing(
 
     async def fake_inject(dependent: object) -> Bot:  # noqa: ARG001
         return cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
+
+    async def fake_func_detail(
+        info: PMNPluginInfo,
+        info_index: int,
+        func: PMDataItem,
+        func_index: int | None,
+        showing_hidden: bool,
+        user_can_see_hidden: bool | None,
+    ) -> UniMessage:
+        assert info.name == "已知插件"
+        assert info_index == 0
+        assert func.func == "visible-missing-func-picmenu"
+        assert func.brief_des == "可见缺功能命令"
+        assert func.detail_des == "当前帮助"
+        assert func_index is None
+        assert showing_hidden is True
+        assert user_can_see_hidden is True
+        return UniMessage("generated visible rendered")
 
     monkeypatch.setattr(ext, "inject", fake_inject)
     monkeypatch.setattr(
@@ -680,10 +699,15 @@ async def test_help_extension_falls_back_when_visible_func_missing(
             ),
         ],
     )
+    monkeypatch.setitem(
+        __main__.func_detail_templates.data,
+        "default",
+        fake_func_detail,
+    )
 
-    msg = await ext.output_converter("help", "fallback help")
+    msg = await ext.output_converter("help", "当前帮助")
 
-    assert msg.extract_plain_text() == "fallback help"
+    assert msg.extract_plain_text() == "generated visible rendered"
 
 
 async def test_help_extension_generates_current_command_when_hidden_func_missing(
