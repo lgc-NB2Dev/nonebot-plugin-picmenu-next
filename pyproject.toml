@@ -25,7 +25,15 @@ homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picmenu-next"
 [project.optional-dependencies]
 yaml = ["ruamel-yaml>=0.19.1"]
 toml = ["tomli>=2.4.1; python_version<'3.11'"]
-all = ["nonebot-plugin-picmenu-next[yaml,toml]"]
+config-parsers = ["nonebot-plugin-picmenu-next[yaml,toml]"]
+
+spacy-pkuseg = ["spacy-pkuseg>=1.0.1"]
+rjieba = ["rjieba>=0.2.1"]
+jieba-fast = ["jieba-fast>=0.53"]
+word-cutters = ["nonebot-plugin-picmenu-next[spacy-pkuseg,rjieba,jieba-fast]"]
+
+recommended = ["nonebot-plugin-picmenu-next[config-parsers,spacy-pkuseg]"]
+all = ["nonebot-plugin-picmenu-next[config-parsers,word-cutters]"]
 
 [dependency-groups]
 dev = []

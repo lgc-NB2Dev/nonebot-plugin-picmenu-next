@@ -50,15 +50,10 @@ _✨ 新一代的图片帮助插件 ✨_
 
 ## ℹ️ Tip
 
-htmlrender 插件 v0.7 版本目前可能存在未配置渲染后端导致启动报错的问题，可以添加以下配置项解决：
+htmlrender 插件 v0.7 版本修改了默认后端的启动时机，变成了需要用的时候才会启动，如果用户是第一次使用没有下载好所需资源，会导致第一次出图耗时很久。可以设置以下配置项将 Playwright 设为默认后端，并在 Bot 加载完所有插件后启动：
 
 ```properties
 RENDER_BACKEND=playwright
-```
-
-可选添加以下项，使浏览器在 Bot 启动时预加载并启动：
-
-```properties
 RENDER_STARTUP_MODE=probe
 ```
 
@@ -244,6 +239,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   - 仅在全局配置或插件声明的模板名命中内置模板目录时加载对应模板
   - 收集插件信息后会预加载插件或功能项声明的内置模板
 - 默认模板渲染会优先复用已配置为 Playwright 的 htmlrender 默认渲染实例，否则为模板单独创建 Playwright 渲染实例
+- 新增可选分词器依赖，按优先级自动回落：`spacy-pkuseg` > `rjieba` > `jieba-fast` > `jieba`，默认依赖不变仅装 `jieba`，仅在环境里有所需包时才优先使用。
 
 ### 0.3.2
 

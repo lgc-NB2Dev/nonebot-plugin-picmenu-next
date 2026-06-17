@@ -1,9 +1,37 @@
+from collections.abc import Callable
+from contextlib import suppress
 from functools import cached_property
 from typing import NamedTuple
 from typing_extensions import Self
 
-import jieba
 from pypinyin import Style, pinyin
+
+
+def _get_lcut() -> Callable[[str], list[str]]:
+    """自动选择分词器: spacy_pkuseg > rjieba > jieba_fast > jieba"""
+    with suppress(ImportError):
+        import spacy_pkuseg as pkuseg  # pyright: ignore[reportMissingImports]
+
+        seg = pkuseg.pkuseg(model_name="web")
+        return lambda text: seg.cut(text)  # noqa: PLW0108
+
+    with suppress(ImportError):
+        import rjieba  # pyright: ignore[reportMissingImports]
+
+        seg = rjieba.Jieba()
+        return lambda text: list(seg.cut(text, hmm=True))
+
+    with suppress(ImportError):
+        from jieba_fast import lcut  # pyright: ignore[reportMissingImports]
+
+        return lcut
+
+    from jieba import lcut
+
+    return lcut
+
+
+_lcut = _get_lcut()
 
 
 class _NotCHNStr(str):
@@ -36,7 +64,7 @@ class PinyinChunkSequence(list[PinyinChunk]):
     @classmethod
     def from_raw(cls, text: str) -> Self:
         transformed = pinyin(
-            [x.strip() for x in jieba.lcut(text)],
+            [x.strip() for x in _lcut(text)],
             style=Style.TONE3,
             errors=_NotCHNStr,
             neutral_tone_with_five=True,

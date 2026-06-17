@@ -107,13 +107,21 @@ __plugin_meta__ = PluginMetadata(
 
 ## 编写外部菜单项
 
-本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载
+本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载：
 
 - 插件 localstore 路径下的 `external_infos` 文件夹
 - 原 PicMenu 的 `menu_config/menus` 文件夹
 
 插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
 仅被配置文件定义的顶层属性会被覆盖
+
+注意 `yaml` 与 `toml` 文件的解析器是默认不安装的，可以在下面命令中选其一执行来安装你想要的依赖：
+
+```bash
+uv pip install nonebot-plugin-picmenu-next[yaml]  # 只装 yaml
+uv pip install nonebot-plugin-picmenu-next[toml]  # 只装 toml（Python 3.11 及以上不用装）
+uv pip install nonebot-plugin-picmenu-next[config-parsers]  # 全部安装
+```
 
 配置文件定义 Schema 请查看 [defs/ExternalPluginInfo.json](../defs/ExternalPluginInfo.json)，可以使用以下语法引入你的配置文件：
 
