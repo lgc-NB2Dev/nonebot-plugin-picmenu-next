@@ -1,14 +1,24 @@
 # AGENTS.md
 
-First: This project expects the working root to be `lgc-NB2Dev/workspace` because some required workspace-level files is not stored in this plugin project. If you are not working from that root (You can use `git remote -v` to check), stop and notify the user.
+First: This project expects the working root to be github repo `lgc-NB2Dev/workspace` because some recommended workspace-level files is not stored in this plugin project. If you are not working from that root, stop and notify the user.
 
 ## Structure
 
-To be added
+- `data_source/`: Plugin info models (`PMNPluginInfo`, `PMDataItem`), data collection (Alconna / plugin metadata), pinyin matching
+- `templates/`: Template rendering pipeline
+  - `default/`: Built-in default template ("default") — Jinja2 templates, CSS, JS, image rendering entry point
+  - `jj_utils.py`: Jinja2 context function factory (`build_base_render_kwargs`), global Jinja2 filters
+  - `pw_utils.py`: Playwright route utilities (local-file route, `local_file_route_prp_transformer`)
+  - `hr_utils.py`: htmlrender integration (template render instance, markdown style directory)
+- `markdown.py`: `plugin:` resource path syntax processor — `PluginResPathProcessor`/`PluginResPathTransformer` type aliases, `build_default_prp_processor`, `resource_resolve_plugin`
+- `__main__.py`: Command handler entry point (matchers, help menu logic)
+- `config.py`: Plugin global config
+- `ft_parser.py`: PicMenu custom Rich Text format parser
+- `utils.py`: General utilities
 
 ## Rules
 
-Currently empty
+- Run `scripts/gen_defs.py` and `yarn prettier -cw defs/*` after changing `ExternalPluginInfo` and related models.
 
 ## Gotchas
 

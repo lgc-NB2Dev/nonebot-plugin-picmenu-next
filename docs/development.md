@@ -5,18 +5,21 @@
 ## 目录 <!-- omit in toc -->
 
 - [Quick QA](#quick-qa)
-  - [如何适配 Markdown 展示？](#如何适配-markdown-展示)
-  - [如何禁用 Alconna 命令自动探测？](#如何禁用-alconna-命令自动探测)
-  - [已经写了菜单项，还想附加 Alconna 自动探测结果？](#已经写了菜单项还想附加-alconna-自动探测结果)
+  - [如何开启 Markdown 展示？](#如何开启-markdown-展示)
+  - [如何在 Markdown 中引用插件资源（如图片）？](#如何在-markdown-中引用插件资源如图片)
+  - [想自定义 Alconna 命令自动探测的行为？](#想自定义-alconna-命令自动探测的行为)
+- [插件元数据对接](#插件元数据对接)
 - [编写外部菜单项](#编写外部菜单项)
-- [插件开发者对接](#插件开发者对接)
-- [Alconna 命令自动探测](#alconna-命令自动探测)
+- [Alconna 集成](#alconna-集成)
+  - [命令自动探测](#命令自动探测)
+  - [Markdown Formatter](#markdown-formatter)
+  - [PMNHelpExtension 全局帮助接管](#pmnhelpextension-全局帮助接管)
 - [Mixin 编写](#mixin-编写)
 - [菜单模板](#菜单模板)
 
 ## Quick QA
 
-### 如何适配 Markdown 展示？
+### 如何开启 Markdown 展示？
 
 按如下方式编辑插件元数据，你即刻就可让插件信息走 Markdown 渲染：
 
@@ -31,65 +34,26 @@ __plugin_meta__ = PluginMetadata(
 )
 ```
 
-### 如何禁用 Alconna 命令自动探测？
+### 如何在 Markdown 中引用插件资源（如图片）？
 
-在插件元数据的 `extra` 中显式设置 `menu_data`，例如空列表 `[]`，即可表示插件已自行声明三级菜单，PicMenu Next 不会再从该插件注册的 Alconna 命令自动补全：
+开启 Markdown 后，可以在描述、用法、功能详情中使用 `plugin:` 前缀引用插件自身或其他插件的模块资源文件：
 
-```python
-__plugin_meta__ = PluginMetadata(
-    ...,
-    extra={
-        "menu_data": [],
-    },
-)
-```
+| 语法                     | 说明                     |
+| ------------------------ | ------------------------ |
+| `plugin:self,相对路径`   | 引用当前插件模块下的文件 |
+| `plugin:插件ID,相对路径` | 引用指定插件模块下的文件 |
 
-### 已经写了菜单项，还想附加 Alconna 自动探测结果？
+该语法在以下位置自动解析：
 
-在 `extra["pmn"]` 中设置 `alc_force_enable_detect=True` 即可强制启用 Alconna 自动探测。探测生成的功能项会附加到当前插件菜单项的最前面：
+- Markdown 图片 `![alt](plugin:self,img/logo.png)`
+- Markdown 链接 `[下载](plugin:self,file.zip)`
+- HTML `<img src="plugin:self,...">` `<a href="plugin:self,...">` `<video src="..." poster="...">`
 
-```python
-__plugin_meta__ = PluginMetadata(
-    ...,
-    extra={
-        "pmn": {
-            "alc_force_enable_detect": True,
-        },
-        "menu_data": [
-            # ...
-        ],
-    },
-)
-```
+### 想自定义 Alconna 命令自动探测的行为？
 
-## 编写外部菜单项
+详见 [Alconna 集成](#alconna-集成)。
 
-本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载
-
-- 插件 localstore 路径下的 `external_infos` 文件夹
-- 原 PicMenu 的 `menu_config/menus` 文件夹
-
-插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
-仅被配置文件定义的顶层属性会被覆盖
-
-配置文件定义 Schema 请查看 [defs/ExternalPluginInfo.json](../defs/ExternalPluginInfo.json)，可以使用以下语法引入你的配置文件：
-
-- JSON:
-  ```json
-  {
-    "$schema": "https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json"
-  }
-  ```
-- YAML（使用 VSCode YAML 扩展）:
-  ```yaml
-  # yaml-language-server: $schema=https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json
-  ```
-- TOML（使用 VSCode Even Better TOML 扩展）:
-  ```toml
-  #:schema https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json
-  ```
-
-## 插件开发者对接
+## 插件元数据对接
 
 PicMenu Next 的数据声明格式派生自 [nonebot_plugin_PicMenu](https://github.com/hamo-reid/nonebot_plugin_PicMenu)，保留了 `menu_data`、`func`、`trigger_method`、`trigger_condition`、`brief_des`、`detail_des` 等字段。PicMenu Next 会优先读取插件的 `PluginMetadata`，并从 `extra` 字段中解析扩展信息。
 
@@ -141,38 +105,83 @@ __plugin_meta__ = PluginMetadata(
 | `pmn_hidden`   | `bool`        | `False` | 是否隐藏该功能             |
 | `pmn_template` | `str \| None` | `None`  | 为该功能指定功能详情页模板 |
 
-## Alconna 命令自动探测
+## 编写外部菜单项
 
-如果插件没有提供 `menu_data` 或将其设为 `None`，PicMenu Next 会尝试从该插件注册的 Alconna 命令自动补全三级菜单。若插件 metadata 中提供了 `menu_data` 且值不是 `None`，包括显式设为空列表 `[]`，都会视为插件已自行声明三级菜单并禁用 Alconna 自动探测。
+本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载
 
-如果你既想保留手写菜单项，又想附加自动探测结果，可以在插件 metadata 的 `extra["pmn"]` 中设置 `alc_force_enable_detect=True`。开启后即使 `menu_data` 已经有内容，PicMenu Next 也会继续探测该插件的 Alconna 命令，并将生成的菜单项放到现有菜单项最前面。
+- 插件 localstore 路径下的 `external_infos` 文件夹
+- 原 PicMenu 的 `menu_config/menus` 文件夹
 
-如果你需要更复杂的追加、删除或重排逻辑，可以通过 mixin 在菜单数据收集后修改 `PMNPluginInfo.pm_data`。
+插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
+仅被配置文件定义的顶层属性会被覆盖
 
-自动探测会读取命令名、可触发命令、命令描述与帮助文本生成 `PMDataItem`。其中 `brief_des` 固定使用 `CommandMeta.description`；如果插件启用了 `extra["pmn"]["markdown"] = True`，并且命令没有自定义 formatter，详细用法会使用 Alconna 的 Markdown formatter 生成。
+配置文件定义 Schema 请查看 [defs/ExternalPluginInfo.json](../defs/ExternalPluginInfo.json)，可以使用以下语法引入你的配置文件：
 
-单条 Alconna 命令可以通过 `CommandMeta.extra["pmn"]` 覆盖自动生成的菜单项字段。该配置按全可空的 `PMDataItem` 校验，未填写的字段继续使用自动生成值：
+- JSON:
 
-```python
-from arclet.alconna import Alconna, CommandMeta
+  ```json
+  {
+    "$schema": "https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json"
+  }
+  ```
 
-alc = Alconna(
-    "example",
-    meta=CommandMeta(
-        description="简要说明",
-        extra={
-            "pmn": {
-                "func": "功能名称",
-                "trigger_method": "`/example`",
-                "trigger_condition": "发送对应指令",
-                "detail_des": "详细用法说明",
-                "pmn_hidden": False,
-                "pmn_template": "default",
-            },
-        },
-    ),
-)
-```
+- YAML（使用 VSCode YAML 扩展）:
+
+  ```yaml
+  # yaml-language-server: $schema=https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json
+  ```
+
+- TOML（使用 VSCode Even Better TOML 扩展）:
+
+  ```toml
+  #:schema https://raw.githubusercontent.com/lgc-NB2Dev/nonebot-plugin-picmenu-next/refs/heads/master/defs/ExternalPluginInfo.json
+  ```
+
+## Alconna 集成
+
+### 命令自动探测
+
+- **默认开箱即用**：如果插件没有提供 `menu_data` 或将其设为 `None`，PicMenu Next 会尝试从该插件注册的 Alconna 命令自动补全三级菜单。自动探测会读取命令名、可触发命令、命令描述与帮助文本生成三级菜单项。
+- **自动 Markdown 支持**：如果插件启用了 Markdown，并且命令没有自定义 formatter，详细用法会使用本插件自定义的 `PMNMarkdownTextFormatter` 生成。
+- **显式禁用自动探测**：若插件 metadata 中提供了 `menu_data` 且值不是 `None`，包括显式设为空列表 `[]`，都会视为插件已自行声明三级菜单并禁用 Alconna 自动探测。
+- **在不禁用自动探测的情况下追加菜单项**：如果你既想保留手写菜单项，又想附加自动探测结果，可以在插件 metadata 的 `extra["pmn"]` 中设置 `"alc_force_enable_detect": True`。开启后即使 `menu_data` 已经有内容，PicMenu Next 也会继续探测该插件的 Alconna 命令，并将生成的菜单项放到现有菜单项最前面。
+- **复杂修改逻辑**：如果你需要更复杂的追加、删除或重排逻辑，可以通过 mixin 在菜单数据收集后修改 `PMNPluginInfo.pm_data`。
+- **覆盖默认结果**：单条 Alconna 命令可以通过 `CommandMeta.extra["pmn"]` 覆盖自动生成的菜单项字段。该配置按全可空的 `PMDataItem` 校验，未填写的字段继续使用自动生成值：
+
+  ```python
+  from arclet.alconna import Alconna, CommandMeta
+
+  alc = Alconna(
+      "example",
+      meta=CommandMeta(
+          extra={
+              "pmn": {
+                  "func": "功能名称",
+                  "trigger_method": "`/example`",
+                  "trigger_condition": "发送对应指令",
+                  "brief_des": "简要介绍",
+                  "detail_des": "详细用法说明",
+                  "pmn_hidden": False,
+                  "pmn_template": "default",
+              },
+          },
+      ),
+  )
+  ```
+
+### Markdown Formatter
+
+`PMNMarkdownTextFormatter` 是 PicMenu Next 内置的 Alconna Markdown 帮助文本格式化器，相比 Alconna 默认的 `TextFormatter` 和 `MarkdownTextFormatter` 更与本插件的 Markdown 排版适配。
+
+### PMNHelpExtension 全局帮助接管
+
+`PMNHelpExtension` 是一个可选的 Alconna 全局扩展，启用后会：
+
+1. 在 `post_init` / `validate` 阶段为已开启 Markdown 的插件替换命令 formatter 为 `PMNMarkdownTextFormatter`
+2. 在 `output_converter` 阶段接管 `-h/--help` 输出，调用 PicMenu 的模板渲染而非直接输出纯文本
+3. 渲染失败时自动重试带上 `show_hidden=True` 参数，确保隐藏功能也能被查到
+
+配置 `PMN_ALCONNA_GLOBAL_EXT=True` 后插件会通过 `add_global_extension(PMNHelpExtension)` 全局注册。
 
 ## Mixin 编写
 

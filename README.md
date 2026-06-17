@@ -232,6 +232,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ### 0.4.0
 
+- 新增 `plugin:` 资源路径语法，在插件描述、菜单项等支持 Markdown 或 HTML 的文本中引用其他插件的静态资源：
+  - 语法 `plugin:self,相对路径` 引用当前插件的资源，`plugin:插件ID,相对路径` 引用其他插件的资源
+  - 支持 Markdown 图片 `![alt](plugin:self,...)`、链接 `[text](plugin:self,...)`、HTML `<img>` / `<a>` / `<video>` / `<source>` / `<audio>` 等标签的 `src` / `href` / `poster` 属性
+  - 模板开发者可将路径转换为 data URL 或本地文件路由，满足不同渲染场景
 - 默认模板回滚为强依赖 Playwright 的路由渲染方案：
   - 样式与脚本重新通过模板资源路由加载，不再内联读取
   - 恢复 `PMN_DEFAULT_ADDITIONAL_JS` 配置支持
