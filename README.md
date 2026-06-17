@@ -195,7 +195,7 @@ plugins = [
 |          `PMN_DEFAULT_DARK`           |  否  |  `False`  |             是否使用暗色模式             |
 | `PMN_DEFAULT_ENABLE_BUILTIN_CODE_CSS` |  否  |  `True`   |         是否启用内置代码着色 CSS         |
 |     `PMN_DEFAULT_ADDITIONAL_CSS`      |  否  |   `[]`    |          要附加的 CSS 路径列表           |
-|     `PMN_DEFAULT_RENDER_BACKEND`      |  否  |  `None`   |      默认模板使用的 htmlrender 后端      |
+|      `PMN_DEFAULT_ADDITIONAL_JS`      |  否  |   `[]`    |           要附加的 JS 路径列表           |
 
 ## 🎉 使用
 
@@ -229,6 +229,17 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
 ## 📝 更新日志
+
+### 0.4.0
+
+- 默认模板回滚为强依赖 Playwright 的路由渲染方案：
+  - 样式与脚本重新通过模板资源路由加载，不再内联读取
+  - 恢复 `PMN_DEFAULT_ADDITIONAL_JS` 配置支持
+- Markdown 公式改为复用 `nonebot-plugin-htmlrender` 的浏览器侧 KaTeX 渲染脚本，移除 `markdown-katex` 依赖
+- 优化内置模板加载逻辑，避免未使用默认模板时过早加载 `nonebot-plugin-htmlrender`：
+  - 仅在全局配置或插件声明的模板名命中内置模板目录时加载对应模板
+  - 收集插件信息后会预加载插件或功能项声明的内置模板
+- 默认模板渲染会优先复用已配置为 Playwright 的 htmlrender 默认渲染实例，否则为模板单独创建 Playwright 渲染实例
 
 ### 0.3.2
 

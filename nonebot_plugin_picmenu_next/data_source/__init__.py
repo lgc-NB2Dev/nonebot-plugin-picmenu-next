@@ -12,5 +12,11 @@ def get_infos() -> list[_PMNPluginInfoRaw]:
 
 async def refresh_infos() -> list[_PMNPluginInfoRaw]:
     global _infos
+
     _infos = await _collect_plugin_infos(_get_loaded_plugins())
+
+    from ..templates import preload_builtin_templates_from_infos
+
+    preload_builtin_templates_from_infos(_infos)
+
     return _infos

@@ -3,9 +3,7 @@
 {% set is_md = info.pmn.markdown -%}
 
 {%- block head -%}
-<style>
-  {{ read_res("css/detail.css") | safe }}
-</style>
+<link rel="stylesheet" href="./css/detail.css" />
 {%- endblock -%}
 
 {%- block main -%}

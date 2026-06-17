@@ -1,8 +1,9 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
+from importlib import import_module
 from pathlib import Path
 from typing import Protocol, TypeVar
 
-from cookit import HasNameProtocol, NameDecoCollector, auto_import
+from cookit import HasNameProtocol, NameDecoCollector
 from nonebot import logger
 from nonebot_plugin_alconna.uniseg import UniMessage
 
@@ -10,6 +11,25 @@ from ..config import config
 from ..data_source.models import PMDataItem, PMNPluginInfo
 
 TN = TypeVar("TN", bound=HasNameProtocol)
+
+BUILTIN_TEMPLATE_DIR = Path(__file__).parent
+loaded_builtin_templates: set[str] = set()
+
+
+def is_builtin_template(name: str) -> bool:
+    if not name or name.startswith("_"):
+        return False
+    path = BUILTIN_TEMPLATE_DIR / name
+    return path.is_dir() and (path / "__init__.py").exists()
+
+
+def load_builtin_template(name: str) -> bool:
+    if not is_builtin_template(name):
+        return False
+    if name not in loaded_builtin_templates:
+        import_module(f".{name}", __package__)
+        loaded_builtin_templates.add(name)
+    return True
 
 
 class IndexTemplateHandler(HasNameProtocol, Protocol):
@@ -56,6 +76,8 @@ class TemplateDecoCollector(NameDecoCollector[TN]):
         self.name_getter = template_name_getter
 
     def get(self, name: str | None = None) -> TN:
+        if name:
+            load_builtin_template(name)
         if name and name not in self.data:
             logger.warning(
                 f"Plugin configured {self.template_type} template '{name}' not found"
@@ -64,12 +86,14 @@ class TemplateDecoCollector(NameDecoCollector[TN]):
             name = None
         if not name:
             name = self.name_getter()
+            load_builtin_template(name)
         if name not in self.data:
             logger.warning(
                 f"User configured {self.template_type} template '{name}' not found"
                 ", falling back to plugin default",
             )
             name = "default"
+            load_builtin_template(name)
         return self.data[name]
 
 
@@ -87,5 +111,23 @@ func_detail_templates = TemplateDecoCollector[FuncDetailTemplateHandler](
 )
 
 
-def load_builtin_templates():
-    auto_import(Path(__file__).parent, __package__)
+def preload_builtin_templates():
+    for name in {
+        config.index_template,
+        config.detail_template,
+        config.func_detail_template,
+    }:
+        load_builtin_template(name)
+
+
+def preload_builtin_templates_from_infos(infos: Iterable[PMNPluginInfo]) -> None:
+    names: set[str] = set()
+    for info in infos:
+        if info.pmn.template:
+            names.add(info.pmn.template)
+        for item in info.pm_data or ():
+            if item.template:
+                names.add(item.template)
+
+    for name in names:
+        load_builtin_template(name)

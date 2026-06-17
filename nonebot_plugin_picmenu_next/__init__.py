@@ -5,14 +5,13 @@ from nonebot.plugin import PluginMetadata, inherit_supported_adapters, require
 
 require("nonebot_plugin_localstore")
 require("nonebot_plugin_alconna")
-require("nonebot_plugin_htmlrender")
 
 from . import __main__ as __main__
 from .config import ConfigModel
 from .data_source import refresh_infos
-from .templates import load_builtin_templates
+from .templates import preload_builtin_templates
 
-__version__ = "0.3.2.post1"
+__version__ = "0.4.0"
 __plugin_meta__ = PluginMetadata(
     name="PicMenu Next",
     description="新一代的图片帮助插件",
@@ -24,7 +23,7 @@ __plugin_meta__ = PluginMetadata(
     extra={"License": "MIT", "Author": "LgCuwukii"},
 )
 
-load_builtin_templates()
+preload_builtin_templates()
 
 driver = get_driver()
 
