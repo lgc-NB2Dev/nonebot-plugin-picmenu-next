@@ -7,7 +7,7 @@
     <style>
       {{ read_res("css/base.css") | safe }}
       {% if cfg.dark -%}{{ read_res("css/dark.css") | safe }}{% endif %}
-      {{ read_res("third-party/katex.min.css") | safe }}
+      {{ read_htmlrender_res("templates/markdown/katex/katex.min.b64_fonts.css") | safe }}
     </style>
     {% if cfg.enable_builtin_code_css -%}
     <style>

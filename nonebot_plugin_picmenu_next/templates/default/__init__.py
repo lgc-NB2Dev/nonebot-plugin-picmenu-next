@@ -20,7 +20,12 @@ from pydantic import Field
 from ...config import version
 from ...data_source.models import PMDataItem, PMNPluginInfo, compat_model_config
 from .. import detail_templates, func_detail_templates, index_templates
-from ..t_utils import get_template_render, read_local_file, register_filters
+from ..t_utils import (
+    HTMLRENDER_DIR,
+    get_template_render,
+    read_text_file,
+    register_filters,
+)
 
 AliasCompatModel = get_model_with_config(
     {
@@ -64,17 +69,14 @@ template_render = get_template_render(
 )
 
 
-def read_res(path: str) -> str:
-    return read_local_file(RES_DIR / path)
-
-
 async def render(template: str, **kwargs):
     template_obj = jj_env.get_template(template)
     html = await template_obj.render_async(
         **kwargs,
         cfg=template_config,
-        read_local_file=read_local_file,
-        read_res=read_res,
+        read_local_file=read_text_file,
+        read_res=lambda path: read_text_file(RES_DIR / path),
+        read_htmlrender_res=lambda path: read_text_file(HTMLRENDER_DIR / path),
         version=version(),
     )
     if debug.enabled:

@@ -2,6 +2,7 @@ from html import escape
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import nonebot_plugin_htmlrender
 from cookit.jinja import cookit_global_filter
 from cookit.jinja.filters import br, safe_layout, space
 from cookit.loguru import warning_suppress
@@ -24,10 +25,13 @@ if TYPE_CHECKING:
     import jinja2 as jj
     from nonebot_plugin_htmlrender.consts import RenderBackend
 
+HTMLRENDER_DIR = Path(nonebot_plugin_htmlrender.__path__[0])
+
+
 _render_cache: dict["RenderBackend", Render] = {}
 
 
-def read_local_file(path: str | Path) -> str:
+def read_text_file(path: str | Path) -> str:
     return Path(path).expanduser().resolve().read_text("u8")
 
 
