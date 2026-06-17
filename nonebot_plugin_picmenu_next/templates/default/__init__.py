@@ -14,11 +14,11 @@ from nonebot.plugin import require
 from nonebot_plugin_alconna.uniseg import UniMessage
 from pydantic import Field
 
-from ...config import version
 from ...data_source.models import PMDataItem, PMNPluginInfo, compat_model_config
+from ...markdown import build_default_prp_processor
 from .. import detail_templates, func_detail_templates, index_templates
-from ..jj_utils import setup_base_filters
-from ..pw_utils import ROUTE_BASE_URL, base_routers
+from ..jj_utils import build_base_render_kwargs, filters
+from ..pw_utils import ROUTE_BASE_URL, base_routers, local_file_route_prp_transformer
 
 if TYPE_CHECKING:
     from playwright.async_api import Page
@@ -70,8 +70,6 @@ template_render = get_template_render(
 
 ## Filters / Jinja
 
-filters = setup_base_filters()
-
 jj_env = jj.Environment(
     loader=jj.FileSystemLoader(RES_DIR),
     autoescape=True,
@@ -79,6 +77,7 @@ jj_env = jj.Environment(
 )
 jj_env.filters.update(filters.data)
 
+prp_processor = build_default_prp_processor(local_file_route_prp_transformer)
 
 ## Routers
 
@@ -102,12 +101,19 @@ async def _(url: "URL", **_):
 ## Render
 
 
-async def render(template: str, routers: RouterGroup, **kwargs):
+async def render(
+    template: str,
+    routers: RouterGroup,
+    **kwargs,
+):
     template_obj = jj_env.get_template(template)
     html = await template_obj.render_async(
-        **kwargs,
         cfg=template_config,
-        version=version(),
+        **build_base_render_kwargs(
+            info=kwargs.get("info"),
+            prp_processor=prp_processor,
+        ),
+        **kwargs,
     )
     if debug.enabled:
         debug.write(html, f"{template.replace('.html.jinja', '')}_{{time}}.html")

@@ -14,31 +14,31 @@
 {% if func -%}
 <div class="inner-flex">
   <h2 class="deco">触发方式</h2>
-  <div class="card md">{{ func.trigger_method | layout(is_md) }}</div>
+  <div class="card md">{{ layout(func.trigger_method, is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">触发条件</h2>
-  <div class="card md">{{ func.trigger_condition | layout(is_md) }}</div>
+  <div class="card md">{{ layout(func.trigger_condition, is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">简要介绍</h2>
-  <div class="card md">{{ func.brief_des | layout(is_md) }}</div>
+  <div class="card md">{{ layout(func.brief_des, is_md) }}</div>
 </div>
 <div class="inner-flex">
   <h2 class="deco">详细用法</h2>
-  <div class="card md">{{ func.detail_des | layout(is_md) }}</div>
+  <div class="card md">{{ layout(func.detail_des, is_md) }}</div>
 </div>
 {% else -%}
 {% if info.description -%}
 <div class="inner-flex">
   <h2 class="deco">简介</h2>
-  <div class="card md">{{ info.description | layout(is_md) }}</div>
+  <div class="card md">{{ layout(info.description, is_md) }}</div>
 </div>
 {% endif -%}
 {% if info.usage -%}
 <div class="inner-flex">
   <h2 class="deco">用法</h2>
-  <div class="card md">{{ info.usage | layout(is_md) }}</div>
+  <div class="card md">{{ layout(info.usage, is_md) }}</div>
 </div>
 {% endif -%}
 {% if info.pm_data -%}
@@ -61,13 +61,13 @@
       <div>
         <div class="func-meta">
           <span>触发方式：</span>
-          <div class="md">{{ x.trigger_method | layout(is_md) }}</div>
+          <div class="md">{{ layout(x.trigger_method, is_md) }}</div>
         </div>
         <div class="func-meta">
           <span>触发条件：</span>
-          <div class="md">{{ x.trigger_condition | layout(is_md) }}</div>
+          <div class="md">{{ layout(x.trigger_condition, is_md) }}</div>
         </div>
-        <div class="md">{{ x.brief_des | layout(is_md) }}</div>
+        <div class="md">{{ layout(x.brief_des, is_md) }}</div>
       </div>
     </div>
     {% endfor -%}
