@@ -650,6 +650,188 @@ async def test_help_extension_falls_back_when_plugin_missing(
     assert msg.extract_plain_text() == "fallback help"
 
 
+async def test_func_detail_inherits_plugin_template(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from nonebot_plugin_alconna.uniseg import UniMessage
+    from nonebot_plugin_picmenu_next import __main__
+    from nonebot_plugin_picmenu_next.data_source.models import (
+        PMDataItem,
+        PMNData,
+        PMNPluginInfo,
+    )
+
+    async def render_func_detail(
+        pmn: PMNData,
+        func_template: str | None = None,
+    ) -> UniMessage | None:
+        monkeypatch.setattr(__main__, "resolve_main_mixin", fake_resolve_main)
+        monkeypatch.setattr(__main__, "resolve_detail_mixin", fake_resolve_detail)
+        monkeypatch.setattr(
+            __main__,
+            "get_infos",
+            lambda: [
+                PMNPluginInfo(
+                    name="继承模板插件",
+                    pmn=pmn,
+                    pm_data=[
+                        PMDataItem(
+                            func="继承模板功能",
+                            trigger_method="继承模板功能",
+                            trigger_condition="指令",
+                            brief_des="测试继承插件模板",
+                            detail_des="测试继承插件模板详情",
+                            pmn_template=func_template,
+                        ),
+                    ],
+                ),
+            ],
+        )
+        monkeypatch.setitem(
+            __main__.func_detail_templates.data,
+            "default",
+            default_func_detail,
+        )
+        monkeypatch.setitem(
+            __main__.func_detail_templates.data,
+            "inherited",
+            inherited_func_detail,
+        )
+
+        bot = cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
+        ev = cast("Event", SimpleNamespace())
+
+        msg, _, _ = await __main__.render_menu(
+            bot,
+            ev,
+            q_plugin="1",
+            q_function="1",
+        )
+        return msg
+
+    async def fake_resolve_main(infos: list[PMNPluginInfo]) -> list[PMNPluginInfo]:
+        return infos
+
+    async def fake_resolve_detail(info: PMNPluginInfo) -> PMNPluginInfo:
+        return info
+
+    async def default_func_detail(
+        info: PMNPluginInfo,  # noqa: ARG001
+        info_index: int,  # noqa: ARG001
+        func: PMDataItem,  # noqa: ARG001
+        func_index: int | None,  # noqa: ARG001
+        showing_hidden: bool,  # noqa: ARG001
+        user_can_see_hidden: bool | None,  # noqa: ARG001
+    ) -> UniMessage:
+        return UniMessage("default template")
+
+    async def inherited_func_detail(
+        info: PMNPluginInfo,
+        info_index: int,
+        func: PMDataItem,
+        func_index: int | None,
+        showing_hidden: bool,
+        user_can_see_hidden: bool | None,
+    ) -> UniMessage:
+        assert info.name == "继承模板插件"
+        assert info_index == 0
+        assert func.func == "继承模板功能"
+        assert func_index == 0
+        assert showing_hidden is False
+        assert user_can_see_hidden is None
+        return UniMessage("inherited template")
+
+    msg = await render_func_detail(PMNData(template="inherited"))
+
+    assert msg is not None
+    assert msg.extract_plain_text() == "inherited template"
+
+
+async def test_func_detail_can_disable_plugin_template_inheritance(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from nonebot_plugin_alconna.uniseg import UniMessage
+    from nonebot_plugin_picmenu_next import __main__
+    from nonebot_plugin_picmenu_next.data_source.models import (
+        PMDataItem,
+        PMNData,
+        PMNPluginInfo,
+    )
+
+    async def fake_resolve_main(infos: list[PMNPluginInfo]) -> list[PMNPluginInfo]:
+        return infos
+
+    async def fake_resolve_detail(info: PMNPluginInfo) -> PMNPluginInfo:
+        return info
+
+    async def default_func_detail(
+        info: PMNPluginInfo,  # noqa: ARG001
+        info_index: int,  # noqa: ARG001
+        func: PMDataItem,  # noqa: ARG001
+        func_index: int | None,  # noqa: ARG001
+        showing_hidden: bool,  # noqa: ARG001
+        user_can_see_hidden: bool | None,  # noqa: ARG001
+    ) -> UniMessage:
+        return UniMessage("default template")
+
+    async def inherited_func_detail(
+        info: PMNPluginInfo,  # noqa: ARG001
+        info_index: int,  # noqa: ARG001
+        func: PMDataItem,  # noqa: ARG001
+        func_index: int | None,  # noqa: ARG001
+        showing_hidden: bool,  # noqa: ARG001
+        user_can_see_hidden: bool | None,  # noqa: ARG001
+    ) -> UniMessage:
+        return UniMessage("inherited template")
+
+    monkeypatch.setattr(__main__, "resolve_main_mixin", fake_resolve_main)
+    monkeypatch.setattr(__main__, "resolve_detail_mixin", fake_resolve_detail)
+    monkeypatch.setattr(
+        __main__,
+        "get_infos",
+        lambda: [
+            PMNPluginInfo(
+                name="禁用继承插件",
+                pmn=PMNData(template="inherited", inherit_func_template=False),
+                pm_data=[
+                    PMDataItem(
+                        func="禁用继承功能",
+                        trigger_method="禁用继承功能",
+                        trigger_condition="指令",
+                        brief_des="测试关闭继承插件模板",
+                        detail_des="测试关闭继承插件模板详情",
+                    ),
+                ],
+            ),
+        ],
+    )
+    monkeypatch.setitem(
+        __main__.func_detail_templates.data,
+        "default",
+        default_func_detail,
+    )
+    monkeypatch.setitem(
+        __main__.func_detail_templates.data,
+        "inherited",
+        inherited_func_detail,
+    )
+
+    bot = cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
+    ev = cast("Event", SimpleNamespace())
+
+    msg, _, _ = await __main__.render_menu(
+        bot,
+        ev,
+        q_plugin="1",
+        q_function="1",
+    )
+
+    assert msg is not None
+    assert msg.extract_plain_text() == "default template"
+
+
 async def test_help_extension_generates_current_command_when_visible_func_missing(
     picmenu_plugin: object,  # noqa: ARG001
     monkeypatch: "pytest.MonkeyPatch",

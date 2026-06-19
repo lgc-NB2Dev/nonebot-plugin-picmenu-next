@@ -72,6 +72,7 @@ __plugin_meta__ = PluginMetadata(
             "hidden": False,
             "markdown": True,
             "template": "default",
+            "inherit_func_template": True,
             "alc_force_enable_detect": False,
         },
         "menu_data": [
@@ -89,12 +90,13 @@ __plugin_meta__ = PluginMetadata(
 
 `pmn` 支持以下可选字段：
 
-| 字段                      | 类型          | 默认值  | 说明                                                |
-| ------------------------- | ------------- | ------- | --------------------------------------------------- |
-| `hidden`                  | `bool`        | `False` | 是否在普通帮助菜单中隐藏                            |
-| `markdown`                | `bool`        | `False` | 是否将描述、用法、功能详情按 Markdown 渲染          |
-| `template`                | `str \| None` | `None`  | 为该插件指定详情页模板                              |
-| `alc_force_enable_detect` | `bool`        | `False` | 即使已定义 `menu_data`，也强制启用 Alconna 自动探测 |
+| 字段                      | 类型          | 默认值  | 说明                                                     |
+| ------------------------- | ------------- | ------- | -------------------------------------------------------- |
+| `hidden`                  | `bool`        | `False` | 是否在普通帮助菜单中隐藏                                 |
+| `markdown`                | `bool`        | `False` | 是否将描述、用法、功能详情按 Markdown 渲染               |
+| `template`                | `str \| None` | `None`  | 为该插件指定详情页模板                                   |
+| `inherit_func_template`   | `bool`        | `True`  | 功能项未设置 `pmn_template` 时，功能详情页是否继承该模板 |
+| `alc_force_enable_detect` | `bool`        | `False` | 即使已定义 `menu_data`，也强制启用 Alconna 自动探测      |
 
 `menu_data` 中每一项对应一个三级菜单功能，必填字段为 `func`、`trigger_method`、`trigger_condition`、`brief_des`、`detail_des`。
 
@@ -340,7 +342,7 @@ async def render_func_detail(
 
 三个模板注册器互相独立，通常建议使用同一个模板名分别注册首页、插件详情页、功能详情页。用户可通过 `PMN_INDEX_TEMPLATE`、`PMN_DETAIL_TEMPLATE`、`PMN_FUNC_DETAIL_TEMPLATE` 设置默认模板。
 
-单个插件也可以通过 `extra["pmn"]["template"]` 指定详情页模板，单个功能可以通过 `pmn_template` 指定功能详情页模板。
+单个插件也可以通过 `extra["pmn"]["template"]` 指定详情页模板。默认情况下，功能详情页会在功能项未设置 `pmn_template` 时继承该模板；如果插件开发者不希望继承，可以设置 `extra["pmn"]["inherit_func_template"]` 为 `False`。单个功能可以通过 `pmn_template` 指定功能详情页模板，并且会优先于继承的插件模板。
 
 `func_index` 表示当前功能在插件功能列表中的 0 基序号；当功能详情来自 Alconna `-h/--help` 接管时，如果当前命令没有对应的已注册菜单项，PicMenu Next 会临时生成一个功能项，此时 `func_index` 为 `None`。
 

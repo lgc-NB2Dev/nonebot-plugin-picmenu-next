@@ -311,10 +311,18 @@ async def render_menu(
     func_index, func = r
     if alc_detail_des is not None:
         func = model_copy(func, update={"detail_des": alc_detail_des})
+    template = func.template or (
+        info.pmn.template if info.pmn.inherit_func_template else None
+    )
     return (
-        await func_detail_templates.get(
-            func.template,
-        )(info, info_index, func, func_index, show_hidden, user_can_see_hidden),
+        await func_detail_templates.get(template)(
+            info,
+            info_index,
+            func,
+            func_index,
+            show_hidden,
+            user_can_see_hidden,
+        ),
         info,
         func,
     )

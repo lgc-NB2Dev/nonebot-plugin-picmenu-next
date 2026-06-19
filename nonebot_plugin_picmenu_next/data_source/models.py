@@ -72,6 +72,7 @@ class PMNData(CompatModel):
     hidden: bool = False
     markdown: bool = False
     template: str | None = None
+    inherit_func_template: bool = True
     alc_force_enable_detect: bool = False
 
 

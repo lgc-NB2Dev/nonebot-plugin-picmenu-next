@@ -33,6 +33,11 @@
           "default": null,
           "title": "Template"
         },
+        "inherit_func_template": {
+          "default": true,
+          "title": "Inherit Func Template",
+          "type": "boolean"
+        },
         "alc_force_enable_detect": {
           "default": false,
           "title": "Alc Force Enable Detect",
@@ -83,6 +88,7 @@
         "hidden": false,
         "markdown": false,
         "template": null,
+        "inherit_func_template": true,
         "alc_force_enable_detect": false
       }
     }
