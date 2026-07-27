@@ -219,7 +219,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 💰 赞助
 
-**[赞助我](https://blog.lgc2333.top/donate)**
+**[赞助我](https://lgck.cc/sponsor)**
 
 感谢大家的赞助！你们的赞助将是我继续创作的动力！
 
