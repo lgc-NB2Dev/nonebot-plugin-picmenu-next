@@ -290,7 +290,9 @@ async def _(next_mixin: PluginDetailMixinNext, info: PMNPluginInfo):
 @self_detail_mixins()
 async def _(next_mixin: PluginDetailMixinNext, info: PMNPluginInfo):
     info = info.model_copy()  # 注意上方 Caution
-    info.description = f"{info.description or ''}\n\n这段内容只会出现在当前插件功能详情页。"
+    info.description = (
+        f"{info.description or ''}\n\n这段内容只会出现在当前插件功能详情页。"
+    )
     return await next_mixin(info)
 ```
 
