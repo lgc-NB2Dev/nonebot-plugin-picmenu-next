@@ -40,10 +40,10 @@ _✨ 新一代的图片帮助插件 ✨_
 <br />
 
 <a href="https://registry.nonebot.dev/plugin/nonebot-plugin-picmenu-next:nonebot_plugin_picmenu_next">
-  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgc2333.top%2Fplugin%2Fnonebot-plugin-picmenu-next" alt="NoneBot Registry">
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgck.cc%2Fplugin%2Fnonebot-plugin-picmenu-next" alt="NoneBot Registry">
 </a>
 <a href="https://registry.nonebot.dev/plugin/nonebot-plugin-picmenu-next:nonebot_plugin_picmenu_next">
-  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgc2333.top%2Fplugin-adapters%2Fnonebot-plugin-picmenu-next" alt="Supported Adapters">
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgck.cc%2Fplugin-adapters%2Fnonebot-plugin-picmenu-next" alt="Supported Adapters">
 </a>
 
 </div>
