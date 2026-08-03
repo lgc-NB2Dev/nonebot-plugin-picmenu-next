@@ -17,7 +17,6 @@ def pytest_configure(config: pytest.Config) -> None:
             "localstore_config_dir": TEST_NB2_DIR / "config",
             "localstore_data_dir": TEST_NB2_DIR / "data",
             "log_level": "DEBUG",
-            "render_backend": "playwright",
         }
     )
     config.stash[NONEBOT_INIT_KWARGS] = init_kwargs

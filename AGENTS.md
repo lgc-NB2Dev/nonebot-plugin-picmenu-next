@@ -18,7 +18,7 @@ uv run pytest
   - `default/`: Built-in default template ("default") — Jinja2 templates, CSS, JS, image rendering entry point
   - `jj_utils.py`: Jinja2 context function factory (`build_base_render_kwargs`), global Jinja2 filters
   - `pw_utils.py`: Playwright route utilities (local-file route, `local_file_route_prp_transformer`)
-  - `hr_utils.py`: htmlrender integration (template render instance, markdown style directory)
+  - `hr_utils.py`: htmlrender integration, KaTeX resource lookup (v0.6/v0.7 paths)
 - `markdown.py`: `plugin:` resource path syntax processor — `PluginResPathProcessor`/`PluginResPathTransformer` type aliases, `build_default_prp_processor`, `resource_resolve_plugin`
 - `__main__.py`: Command handler entry point (matchers, help menu logic)
 - `config.py`: Plugin global config

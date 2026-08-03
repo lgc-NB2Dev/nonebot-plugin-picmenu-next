@@ -26,9 +26,9 @@ if TYPE_CHECKING:
 
 require("nonebot_plugin_htmlrender")
 
-from nonebot_plugin_htmlrender.consts import RenderBackend
+from nonebot_plugin_htmlrender import get_new_page
 
-from ..hr_utils import HTMLRENDER_MD_TEMPLATE_DIR, get_template_render
+from ..hr_utils import HTMLRENDER_KATEX_DIR
 
 ## Config
 
@@ -60,12 +60,6 @@ template_config = get_plugin_config(TemplateConfigModel)
 
 RES_DIR = Path(__file__).parent / "res"
 debug = DebugFileWriter(Path.cwd() / "debug", "picmenu-next", "default")
-template_render = get_template_render(
-    None,
-    frozenset({RenderBackend.PLAYWRIGHT}),
-    "PicMenu default template",
-    fallback_backend=RenderBackend.PLAYWRIGHT,
-)[0]
 
 
 ## Filters / Jinja
@@ -88,7 +82,7 @@ base_routers = base_routers.copy()
 @make_real_path_router
 @log_router_err()
 async def _(url: "URL", **_):
-    return HTMLRENDER_MD_TEMPLATE_DIR.joinpath(*url.parts[2:])
+    return HTMLRENDER_KATEX_DIR.joinpath(*url.parts[2:])
 
 
 @base_routers.router(f"{ROUTE_BASE_URL}/**/*", 99)
@@ -118,9 +112,7 @@ async def render(
     if debug.enabled:
         debug.write(html, f"{template.replace('.html.jinja', '')}_{{time}}.html")
 
-    async with template_render.get_render_context(
-        viewport={"width": 810, "height": 2430}
-    ) as page:
+    async with get_new_page(viewport={"width": 810, "height": 2430}) as page:
         if TYPE_CHECKING:
             assert isinstance(page, Page)
         await routers.apply(page)
