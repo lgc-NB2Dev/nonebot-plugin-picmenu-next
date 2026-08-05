@@ -1,2 +1,2 @@
 comment:
-  require_changes: 'coverage_drop OR uncovered_patch'
+  require_changes: true

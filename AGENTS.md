@@ -9,7 +9,7 @@ NOTE: The following command are expected to be run under the plugin repo root ra
 ```bash
 poe gen-defs        # uv run scripts/gen_defs.py
 poe test [...]      # pytest
-poe coverage [...]  # pytest --cov=nonebot_plugin_picmenu_next --cov-report=term-missing
+poe coverage [...]  # pytest (with branch coverage and terminal report)
 ```
 
 ## Structure
