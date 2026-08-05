@@ -184,6 +184,12 @@ class ExternalPluginInfo(CompatModel):
             if key in values and values[key] is None:
                 raise TypeError(f"`{key}` cannot be null")
 
+        if (
+            isinstance(pmn := values.get("pmn"), dict)
+            and "alc_force_enable_detect" in pmn
+        ):
+            raise TypeError("External `pmn` cannot set `alc_force_enable_detect`")
+
         if isinstance(values.get("supported_adapters"), str):
             raise TypeError("`supported_adapters` must be an array or null")
 

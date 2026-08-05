@@ -229,7 +229,7 @@ The function-item setting that marks a function item as hidden.
 _Also_: `pmn_hidden`
 
 **显示隐藏项**:
-A menu command option that includes hidden plugins and hidden function items in normal help-menu rendering.
+A menu command option that includes hidden plugins, hidden function items, and plugins hidden because the current adapter is unsupported in normal help-menu rendering.
 _Also_: 显示隐藏插件
 
 **隐藏项权限策略**:

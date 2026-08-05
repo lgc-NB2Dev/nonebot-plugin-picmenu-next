@@ -178,6 +178,10 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
             else:
                 curr_value_buf.append(char)
 
+    if curr_quote:
+        raise ValueError(
+            f"Unterminated quote {curr_quote} starting at index {curr_quote_index}",
+        )
     if curr_value_buf:
         resolve_current()
 
@@ -185,10 +189,6 @@ def parse_chunk(attrs: str, text: str) -> TextChunk:
         raise ValueError(
             f"Unterminated key `{''.join(curr_key_buf)}` found"
             f" starting at index {curr_key_start_index}",
-        )
-    if curr_quote:
-        raise ValueError(
-            f"Unterminated quote {curr_quote} starting at index {curr_quote_index}",
         )
 
     return TextChunk(text=text, **resolved_attrs)

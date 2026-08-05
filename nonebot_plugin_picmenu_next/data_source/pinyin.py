@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from contextlib import suppress
+from dataclasses import dataclass
 from functools import cached_property
-from typing import NamedTuple
 from typing_extensions import Self
 
 from pypinyin import Style, pinyin
@@ -38,7 +38,8 @@ class _NotCHNStr(str):
     __slots__ = ()
 
 
-class PinyinChunk(NamedTuple):
+@dataclass(frozen=True, order=True)
+class PinyinChunk:
     is_pinyin: bool
     text: str
     tone: int = 0

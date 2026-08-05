@@ -23,7 +23,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.fixture
-def picmenu_plugin(app: Any):  # noqa: ARG001
+def picmenu_plugin(app: Any):
     import importlib
 
     import nonebot

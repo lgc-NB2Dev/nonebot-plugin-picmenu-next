@@ -185,8 +185,9 @@ def collect_menus():
             infos[key] = _load_file(path)
 
     def _load_all(path: Path):
-        for x in scan_path(path, supported_suffixes):
-            _load_to_infos(x)
+        with warning_suppress(f"Failed to scan external menu source {path}"):
+            for x in scan_path(path, supported_suffixes):
+                _load_to_infos(x)
 
     _load_all(external_infos_dir)
 
