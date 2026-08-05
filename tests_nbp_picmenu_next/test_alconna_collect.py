@@ -957,6 +957,76 @@ async def test_help_extension_generates_current_command_when_hidden_func_missing
     assert msg.extract_plain_text() == "generated rendered"
 
 
+async def test_help_extension_ignores_supported_adapters_when_rendering_help(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    from nonebot_plugin_alconna.uniseg import UniMessage
+    from nonebot_plugin_picmenu_next import __main__
+    from nonebot_plugin_picmenu_next.data_source.models import (
+        PMDataItem,
+        PMNPluginInfo,
+    )
+
+    command = Alconna(
+        "adapter-hidden-picmenu",
+        meta=CommandMeta(description="适配器隐藏命令"),
+    )
+    command.meta.extra["matcher.source"] = SimpleNamespace(plugin_id="adapter_plugin")
+    ext = __main__.PMNHelpExtension()
+    ext.command = command
+
+    async def fake_inject(dependent: object) -> Bot:  # noqa: ARG001
+        return cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
+
+    async def fake_func_detail(
+        info: PMNPluginInfo,
+        info_index: int,
+        func: PMDataItem,
+        func_index: int | None,
+        showing_hidden: bool,
+        user_can_see_hidden: bool | None,
+    ) -> UniMessage:
+        assert info.name == "适配器隐藏插件"
+        assert info_index == 0
+        assert func.func == "adapter-hidden-picmenu"
+        assert func_index == 0
+        assert showing_hidden is False
+        assert user_can_see_hidden is None
+        return UniMessage("adapter hidden rendered")
+
+    item = PMDataItem(
+        func="adapter-hidden-picmenu",
+        trigger_method="adapter-hidden-picmenu",
+        trigger_condition="指令",
+        brief_des="适配器隐藏命令",
+        detail_des="旧帮助",
+    )
+    item._alc_cmd_id = command.path  # noqa: SLF001
+    monkeypatch.setattr(ext, "inject", fake_inject)
+    monkeypatch.setattr(
+        __main__,
+        "get_infos",
+        lambda: [
+            PMNPluginInfo(
+                name="适配器隐藏插件",
+                plugin_id="adapter_plugin",
+                pm_data=[item],
+                supported_adapters=set(),
+            ),
+        ],
+    )
+    monkeypatch.setitem(
+        __main__.func_detail_templates.data,
+        "default",
+        fake_func_detail,
+    )
+
+    msg = await ext.output_converter("help", "当前帮助")
+
+    assert msg.extract_plain_text() == "adapter hidden rendered"
+
+
 def test_apply_alconna_command_infos_prefers_custom_formatter(
     picmenu_plugin: object,  # noqa: ARG001
 ) -> None:

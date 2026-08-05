@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from cookit.pyd import (
     PYDANTIC_V2,
@@ -76,6 +76,18 @@ class PMNData(CompatModel):
     alc_force_enable_detect: bool = False
 
 
+class ExternalPMNData(CompatModel):
+    hidden: bool = False
+    markdown: bool = False
+    template: str | None = None
+    inherit_func_template: bool = True
+
+    def to_pmn_data(self) -> PMNData:
+        return PMNData(
+            **{k: getattr(self, k) for k in model_fields_set(self)},
+        )
+
+
 class PMNPluginExtra(CompatModel):
     author: str | list[str] | None = None
     version: str | None = None
@@ -105,6 +117,7 @@ class OptionalPMNPluginInfo(CompatModel):
     usage: str | None = None
     pm_data: list[PMDataItem] | None = None
     pmn: PMNData = PMNData()
+    supported_adapters: set[str] | None = None
 
     def to_required(self, name: str | None = None):
         if name is None and self.name is None:
@@ -124,6 +137,7 @@ class PMNPluginInfo(CompatModel):
     usage: str | None = None
     pm_data: list[PMDataItem] | None = None
     pmn: PMNData = PMNData()
+    supported_adapters: set[str] | None = None
 
     @cached_property
     def casefold_name(self) -> str:
@@ -150,19 +164,43 @@ class PMNPluginInfo(CompatModel):
 
 
 class ExternalPluginInfo(CompatModel):
-    name: str | None = None
+    name: str = cast("str", None)
     author: str | None = None
     version: str | None = None
     description: str | None = None
     usage: str | None = None
-    funcs: list[PMDataItem] | None = None
-    pmn: PMNData = PMNData()
+    funcs: list[PMDataItem] = cast("list[PMDataItem]", None)
+    pmn: ExternalPMNData = ExternalPMNData()
+    supported_adapters: set[str] | None = None
+
+    @model_validator(mode="before")
+    def normalize_input(cls, values: Any):  # noqa: N805
+        if isinstance(values, ExternalPluginInfo):
+            values = type_dump_python(values, exclude_unset=True)
+        if not isinstance(values, dict):
+            raise TypeError(f"Expected dict, got {type(values)}")
+
+        for key in ("name", "funcs", "pmn"):
+            if key in values and values[key] is None:
+                raise TypeError(f"`{key}` cannot be null")
+
+        if isinstance(values.get("supported_adapters"), str):
+            raise TypeError("`supported_adapters` must be an array or null")
+
+        return values
+
+    def has_func_override(self) -> bool:
+        return "funcs" in model_fields_set(self)
 
     def to_optional_plugin_info(self, plugin_id: str | None = None):
         key_name_map = {"funcs": "pm_data"}
-        data = {
-            key_name_map.get(k, k): getattr(self, k) for k in model_fields_set(self)
-        }
+        data: dict[str, Any] = {}
+        for k in model_fields_set(self):
+            if k == "pmn" and not model_fields_set(self.pmn):
+                continue
+            data[key_name_map.get(k, k)] = (
+                self.pmn.to_pmn_data() if k == "pmn" else getattr(self, k)
+            )
         if plugin_id:
             data["plugin_id"] = plugin_id
         return OptionalPMNPluginInfo(**data)
@@ -182,6 +220,10 @@ class ExternalPluginInfo(CompatModel):
         info = self.to_optional_plugin_info(plugin_id)
         return info.to_required(name=name)
 
+    def _merge_pmn_to(self, other: PMNPluginInfo) -> None:
+        for k in model_fields_set(self.pmn):
+            setattr(other.pmn, k, getattr(self.pmn, k))
+
     def merge_to(
         self,
         other: PMNPluginInfo,
@@ -189,8 +231,16 @@ class ExternalPluginInfo(CompatModel):
         copy: bool = True,
     ):
         if copy:
-            other = model_copy(other)
-        this = self.to_optional_plugin_info(plugin_id)
-        for k in model_fields_set(this):
-            setattr(other, k, getattr(this, k))
+            other = model_copy(other, deep=True)
+
+        if plugin_id:
+            other.plugin_id = plugin_id
+
+        for k in model_fields_set(self):
+            if k == "funcs":
+                other.pm_data = self.funcs
+            elif k == "pmn":
+                self._merge_pmn_to(other)
+            else:
+                setattr(other, k, getattr(self, k))
         return other

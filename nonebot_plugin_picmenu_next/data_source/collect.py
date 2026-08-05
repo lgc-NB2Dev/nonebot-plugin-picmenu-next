@@ -13,7 +13,7 @@ from nonebot.plugin import Plugin
 
 from ..config import external_infos_dir, pm_menus_dir
 from ..utils import normalize_plugin_name
-from .alconna import apply_alconna_command_infos
+from .alconna import apply_alconna_command_infos, collect_alconna_detect_plugin_ids
 from .mixin import chain_mixins, plugin_collect_mixins
 from .models import ExternalPluginInfo, PMNData, PMNPluginExtra, PMNPluginInfo
 
@@ -113,6 +113,11 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfo:
         usage=meta.usage if meta else None,
         pm_data=extra.menu_data if extra else None,
         pmn=pmn,
+        supported_adapters=(
+            set(meta.supported_adapters)
+            if meta and meta.supported_adapters is not None
+            else None
+        ),
     )
 
 
@@ -195,8 +200,11 @@ def collect_menus():
     return infos
 
 
-def apply_user_custom_infos(infos: list[PMNPluginInfo]) -> list[PMNPluginInfo]:
-    external_infos = collect_menus()
+def apply_user_custom_infos(
+    infos: list[PMNPluginInfo],
+    external_infos: dict[str, ExternalPluginInfo] | None = None,
+) -> list[PMNPluginInfo]:
+    external_infos = external_infos if external_infos is not None else collect_menus()
     if not external_infos:
         return infos
     logger.info(f"Collected {len(external_infos)} external infos")
@@ -223,8 +231,17 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
     )
     infos = [x for x in infos if x]
 
-    infos = apply_user_custom_infos(infos)
-    infos = apply_alconna_command_infos(infos)
+    alconna_detect_plugin_ids = collect_alconna_detect_plugin_ids(infos)
+    external_infos = collect_menus()
+    external_func_override_plugin_ids = {
+        k for k, v in external_infos.items() if v.has_func_override()
+    }
+
+    infos = apply_user_custom_infos(infos, external_infos)
+    infos = apply_alconna_command_infos(
+        infos,
+        alconna_detect_plugin_ids - external_func_override_plugin_ids,
+    )
 
     async def final_mixin(infos: list[PMNPluginInfo]):
         return infos

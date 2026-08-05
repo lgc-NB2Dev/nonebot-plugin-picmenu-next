@@ -1,5 +1,23 @@
 {
   "$defs": {
+    "ExternalPMNData": {
+      "properties": {
+        "hidden": { "default": false, "title": "Hidden", "type": "boolean" },
+        "markdown": { "default": false, "title": "Markdown", "type": "boolean" },
+        "template": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "title": "Template"
+        },
+        "inherit_func_template": {
+          "default": true,
+          "title": "Inherit Func Template",
+          "type": "boolean"
+        }
+      },
+      "title": "ExternalPMNData",
+      "type": "object"
+    },
     "PMDataItem": {
       "properties": {
         "func": { "title": "Func", "type": "string" },
@@ -23,37 +41,10 @@
       ],
       "title": "PMDataItem",
       "type": "object"
-    },
-    "PMNData": {
-      "properties": {
-        "hidden": { "default": false, "title": "Hidden", "type": "boolean" },
-        "markdown": { "default": false, "title": "Markdown", "type": "boolean" },
-        "template": {
-          "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "default": null,
-          "title": "Template"
-        },
-        "inherit_func_template": {
-          "default": true,
-          "title": "Inherit Func Template",
-          "type": "boolean"
-        },
-        "alc_force_enable_detect": {
-          "default": false,
-          "title": "Alc Force Enable Detect",
-          "type": "boolean"
-        }
-      },
-      "title": "PMNData",
-      "type": "object"
     }
   },
   "properties": {
-    "name": {
-      "anyOf": [{ "type": "string" }, { "type": "null" }],
-      "default": null,
-      "title": "Name"
-    },
+    "name": { "default": null, "title": "Name", "type": "string" },
     "author": {
       "anyOf": [{ "type": "string" }, { "type": "null" }],
       "default": null,
@@ -75,22 +66,27 @@
       "title": "Usage"
     },
     "funcs": {
-      "anyOf": [
-        { "items": { "$ref": "#/$defs/PMDataItem" }, "type": "array" },
-        { "type": "null" }
-      ],
       "default": null,
-      "title": "Funcs"
+      "items": { "$ref": "#/$defs/PMDataItem" },
+      "title": "Funcs",
+      "type": "array"
     },
     "pmn": {
-      "$ref": "#/$defs/PMNData",
+      "$ref": "#/$defs/ExternalPMNData",
       "default": {
         "hidden": false,
         "markdown": false,
         "template": null,
-        "inherit_func_template": true,
-        "alc_force_enable_detect": false
+        "inherit_func_template": true
       }
+    },
+    "supported_adapters": {
+      "anyOf": [
+        { "items": { "type": "string" }, "type": "array", "uniqueItems": true },
+        { "type": "null" }
+      ],
+      "default": null,
+      "title": "Supported Adapters"
     }
   },
   "title": "ExternalPluginInfo",

@@ -428,12 +428,23 @@ def collect_alconna_menu_data(
     return result
 
 
-def apply_alconna_command_infos(infos: list[PMNPluginInfo]) -> list[PMNPluginInfo]:
-    plugin_ids = {
+def collect_alconna_detect_plugin_ids(infos: list[PMNPluginInfo]) -> set[str]:
+    return {
         info.plugin_id
         for info in infos
         if info.plugin_id and (info.pm_data is None or info.pmn.alc_force_enable_detect)
     }
+
+
+def apply_alconna_command_infos(
+    infos: list[PMNPluginInfo],
+    plugin_ids: set[str] | None = None,
+) -> list[PMNPluginInfo]:
+    plugin_ids = (
+        plugin_ids
+        if plugin_ids is not None
+        else collect_alconna_detect_plugin_ids(infos)
+    )
     if not plugin_ids:
         return infos
 
@@ -446,7 +457,7 @@ def apply_alconna_command_infos(infos: list[PMNPluginInfo]) -> list[PMNPluginInf
     for info in infos:
         if not info.plugin_id or not (pm_data := alconna_menu_data.get(info.plugin_id)):
             continue
-        if info.pmn.alc_force_enable_detect:
+        if info.pm_data is not None and info.pmn.alc_force_enable_detect:
             info.pm_data = [*pm_data, *(info.pm_data or [])]
             logger.debug(
                 f"Prepended {len(pm_data)} Alconna menu items for {info.plugin_id}",
