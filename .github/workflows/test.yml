@@ -29,11 +29,6 @@ jobs:
       PYDANTIC_VERSION: ${{ matrix.pydantic-version }}
 
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
       - name: Set up workspace
         uses: lgc-NB2Dev/workspace/.github/actions/setup-workspace@main
 
