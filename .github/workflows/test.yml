@@ -64,4 +64,5 @@ jobs:
           disable_search: true
           files: coverage.xml
           flags: unit
+          token: ${{ secrets.CODECOV_TOKEN }}
           working-directory: plugins/${{ github.event.repository.name }}
