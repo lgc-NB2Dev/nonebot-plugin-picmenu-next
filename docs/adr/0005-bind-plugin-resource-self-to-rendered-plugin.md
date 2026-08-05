@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Bind Plugin Resource Self to Rendered Plugin
 
 In plugin resource paths, `plugin:self,...` refers to the plugin currently being rendered, not necessarily the plugin or extension that authored the Markdown text. This keeps external menu config and Mixin-produced Markdown predictable: `self` follows the rendered help subject, while cross-plugin resources should name the target plugin explicitly. Resolution is limited to the currently supported Markdown image/link targets and HTML `src`, `href`, and `poster` attributes. If the target plugin cannot be resolved, PicMenu Next keeps the original resource path instead of failing the menu render.

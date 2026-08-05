@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Store Supported Adapters as Menu Data
 
 Supported adapters are plugin-level menu data, not only transient metadata read from a loaded plugin. PicMenu Next stores them as a top-level plugin menu item field, matching NoneBot's `PluginMetadata.supported_adapters`, rather than inside PicMenu extension config. The internal model uses `set[str] | None`; external JSON/YAML/TOML config writes an array and validation converts it to a set. PicMenu Next collects supported adapters from plugin Metadata, lets external menu config define or override them using the same `supported_adapters` field name and NoneBot syntax, and computes adapter-hidden plugins from the final menu data so loaded plugins and external plugin menus share the same visibility model. Adapter hiding is computed before menu data Mixin runs, so Mixin changes may still override that derived hidden state. When external menu config declares `supported_adapters`, it replaces the collected field as a whole rather than merging. Missing or `null` supported-adapter data follows NoneBot's `None` semantics and means all adapters are supported, while an explicit empty list means no adapters are supported and therefore causes adapter hiding everywhere. Unresolvable adapter entries are ignored rather than failing menu rendering, but ignored entries do not count as support for the current adapter. Supported adapters affect normal menu visibility only and do not limit Alconna Help interception for a command the user has already invoked.

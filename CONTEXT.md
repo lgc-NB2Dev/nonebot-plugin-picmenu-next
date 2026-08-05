@@ -14,6 +14,12 @@ _Also_: 一级菜单
 **普通帮助菜单**:
 A menu view opened through a help-menu command.
 
+**帮助命令**:
+The public command that opens PicMenu help views and accepts menu queries. Its canonical name is `help`, with the Chinese aliases `帮助` and `菜单`.
+
+**命令起始符**:
+The runtime-configured prefix a user must place before a help command invocation.
+
 **菜单查询**:
 Input supplied by a user to locate a plugin or function item in a help menu.
 
@@ -102,8 +108,15 @@ The process of discovering PicMenu help data from registered Alconna commands.
 A function item discovered from an existing command declaration rather than written by the plugin author.
 _Also_: 自动生成功能项
 
+**已禁用命令**:
+An Alconna command currently unavailable for user invocation. It does not create an automatically detected function item.
+
 **Alconna Help 接管**:
-Rendering Alconna command help through PicMenu Next instead of returning the original command help text.
+PicMenu Next handling an Alconna-requested current-command help response. It returns a PicMenu help view when possible and the original Alconna help otherwise.
+
+**全局 Alconna Help 接管开关**:
+The deployment setting that enables PicMenu Next to handle help requests for recognized Alconna commands.
+_Also_: `PMN_ALCONNA_GLOBAL_EXT`
 
 **当前命令帮助**:
 The help response for the concrete Alconna command the user has already invoked.
@@ -111,6 +124,9 @@ The help response for the concrete Alconna command the user has already invoked.
 **插件 Metadata**:
 The plugin-authored metadata that describes the plugin and may include its PicMenu help data.
 _Also_: 插件元数据, 手写菜单数据
+
+**未声明 Metadata 的插件**:
+A loaded plugin whose author has not supplied `PluginMetadata`. It remains eligible for a plugin menu item.
 
 **发行包元数据**:
 Version, maintainer, and summary information published by an installed Python distribution.
@@ -182,6 +198,9 @@ _Also_: 首页 Mixin
 **详情数据 Mixin**:
 An extension point that lets another plugin adjust one plugin's help data before detail views are rendered.
 _Also_: 插件详情 Mixin, 功能详情 Mixin
+
+**Mixin 优先级**:
+The numeric value that determines the nesting order of Mixins of the same kind.
 
 **库插件**:
 A plugin whose primary role is to support other plugins rather than expose user-facing features.
