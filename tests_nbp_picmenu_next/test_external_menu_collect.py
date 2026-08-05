@@ -136,6 +136,33 @@ def test_external_plugin_omitted_name_uses_plugin_id(
     assert info.plugin_id == "nonebot_plugin_external_menu"
 
 
+async def test_refresh_infos_orders_same_pinyin_by_plugin_id(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """The menu snapshot orders same-pinyin plugins by plugin ID."""
+    from nonebot_plugin_picmenu_next import data_source
+    from nonebot_plugin_picmenu_next.data_source import collect
+
+    metadata = PluginMetadata(
+        name="同名插件",
+        description="desc",
+        usage="usage",
+        extra={},
+    )
+    plugins = [
+        make_plugin("z_plugin", metadata),
+        make_plugin("a_plugin", metadata),
+    ]
+    monkeypatch.setattr(data_source, "_get_loaded_plugins", lambda: plugins)
+    monkeypatch.setattr(collect, "collect_menus", dict)
+
+    refreshed = await data_source.refresh_infos()
+
+    assert [info.plugin_id for info in refreshed] == ["a_plugin", "z_plugin"]
+    assert data_source.get_infos() is refreshed
+
+
 def test_external_config_rejects_disallowed_nulls(
     picmenu_plugin: object,  # noqa: ARG001
 ) -> None:

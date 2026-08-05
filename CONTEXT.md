@@ -11,6 +11,21 @@ The core responsibility of PicMenu Next: collecting help data and presenting it 
 The top-level help view that lists available plugins.
 _Also_: 一级菜单
 
+**普通帮助菜单**:
+A menu view opened through a help-menu command.
+
+**菜单查询**:
+Input supplied by a user to locate a plugin or function item in a help menu.
+
+**菜单排序**:
+The deterministic display order of plugin menu items.
+
+**菜单索引**:
+The 1-based position of a menu item in the current sorted menu snapshot. It is not a stable identifier.
+
+**同拼音菜单项**:
+Plugin menu items with the same pinyin sort key.
+
 **插件详情页**:
 The help view for one plugin, showing its plugin-level description and its child help entries.
 _Also_: 二级菜单
@@ -97,6 +112,12 @@ The help response for the concrete Alconna command the user has already invoked.
 The plugin-authored metadata that describes the plugin and may include its PicMenu help data.
 _Also_: 插件元数据, 手写菜单数据
 
+**发行包元数据**:
+Version, maintainer, and summary information published by an installed Python distribution.
+
+**展示信息补全**:
+The fallback-source hierarchy used to supply a plugin menu item's display metadata when its PicMenu-specific metadata omits it.
+
 **PicMenu 扩展配置**:
 PicMenu Next-specific configuration embedded in plugin Metadata or external menu config.
 _Also_: `pmn`
@@ -104,6 +125,9 @@ _Also_: `pmn`
 **Markdown 渲染开关**:
 The PicMenu extension setting that makes help content render as Markdown.
 _Also_: `markdown`
+
+**PicMenu Markdown**:
+The text format used to write help content when Markdown rendering is enabled.
 
 **强制自动探测**:
 The plugin Metadata setting that keeps Alconna auto-detection enabled even when function items are already declared.
@@ -139,10 +163,16 @@ A plugin menu item created entirely from external menu config, without requiring
 A legacy entry point for loading external menu config during migration.
 
 **插件资源路径**:
-A resource reference rooted at a plugin package rather than at a web URL or process working directory.
+A relative resource reference resolved within the target plugin's resource root rather than at a web URL or process working directory.
+
+**插件资源根目录**:
+The module directory of the plugin named by a plugin resource path. It is the boundary of files that the reference may access.
+
+**资源路径越界**:
+An invalid plugin resource path that resolves outside the target plugin's resource root.
 
 **PicMenu 富文本**:
-A legacy PicMenu-compatible rich text input format accepted for migration and compatibility.
+A PicMenu-compatible input format that uses `<ft>` tags to describe the presentation of part of a help text.
 _Avoid_: 推荐格式
 
 **菜单数据 Mixin**:
@@ -154,7 +184,7 @@ An extension point that lets another plugin adjust one plugin's help data before
 _Also_: 插件详情 Mixin, 功能详情 Mixin
 
 **库插件**:
-A plugin whose primary role is to support other plugins rather than expose user-facing features. Library plugins are hidden by default unless PicMenu help data explicitly makes them visible.
+A plugin whose primary role is to support other plugins rather than expose user-facing features.
 
 **支持适配器**:
 The bot adapters a plugin menu entry declares as supported.

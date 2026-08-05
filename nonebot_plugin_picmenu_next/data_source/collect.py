@@ -249,7 +249,7 @@ async def collect_plugin_infos(plugins: Iterable[Plugin]):
     mixin_chain = chain_mixins(plugin_collect_mixins.data, final_mixin)
     infos = await mixin_chain(infos)
 
-    infos.sort(key=lambda x: x.name_pinyin)
+    infos.sort(key=lambda x: (x.name_pinyin, x.plugin_id or ""))
     logger.success(f"Collected {len(infos)} plugin infos")
 
     get_dist.cache_clear()

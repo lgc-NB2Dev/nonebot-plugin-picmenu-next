@@ -66,9 +66,22 @@ def build_default_prp_processor(
         plugin_key = rest[:comma_idx]
         rel_path = rest[comma_idx + 1 :]
         plugin_id = info.plugin_id if plugin_key == "self" else plugin_key
+        relative_path = Path(rel_path)
+        if relative_path.drive or relative_path.root:
+            return path
         if not (plugin := get_plugin(plugin_id)):
             return path
-        return prp_transformer(rel_path, Path(plugin.module.__path__[0]), info, plugin)
+        try:
+            module_path = Path(plugin.module.__path__[0]).resolve()
+            resource_path = (module_path / relative_path).resolve()
+            resource_path.relative_to(module_path)
+            if not resource_path.is_file():
+                return path
+            return prp_transformer(
+                str(resource_path.relative_to(module_path)), module_path, info, plugin
+            )
+        except (OSError, RuntimeError, ValueError):
+            return path
 
     return _prp_processor
 
