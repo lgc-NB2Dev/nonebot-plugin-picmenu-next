@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        os: [ubuntu-latest] # [ubuntu-latest, windows-latest, macos-latest]
+        pydantic-version: ['>=1.10,<2', '>=2.6']
+        exclude:
+          - python-version: '3.14'
+            pydantic-version: '>=1.10,<2'
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      PYDANTIC_VERSION: ${{ matrix.pydantic-version }}
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up workspace
+        id: workspace
+        uses: lgc-NB2Dev/workspace/.github/actions/setup-workspace@main
+
+      - name: Install prerequisites
+        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
+        run: |-
+          uv sync
+          uv run playwright install chromium
+
+      - name: Install Specific Version Pydantic (Bash)
+        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
+        shell: bash
+        run: uv add "pydantic$PYDANTIC_VERSION"
+
+      - name: Run Pytest
+        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
+        run: uv run pytest plugins/nonebot-plugin-picmenu-next/tests_nbp_picmenu_next

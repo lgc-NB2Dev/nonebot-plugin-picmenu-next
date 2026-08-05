@@ -131,6 +131,14 @@ nb plugin install nonebot-plugin-picmenu-next
 在 nonebot2 项目的插件目录下, 打开命令行, 根据你使用的包管理器, 输入相应的安装命令
 
 <details>
+<summary>uv</summary>
+
+```bash
+uv add nonebot-plugin-picmenu-next
+```
+
+</details>
+<details>
 <summary>pip</summary>
 
 ```bash
@@ -195,11 +203,11 @@ plugins = [
 
 ## 🎉 使用
 
-发送 `帮助`（也可使用 `菜单`）查看帮助首页；可继续传入插件和功能的序号或名称，例如 `帮助 1`、`帮助 插件名 功能名`。附加 `-H` 或 `--show-hidden` 可将隐藏项纳入普通帮助菜单；启用 `PMN_ONLY_SUPERUSER_SEE_HIDDEN` 时仅超级用户可使用该选项。
+发送 `帮助` 指令试试吧！
 
 ### 外部菜单加载说明
 
-本插件以 localstore 的 `external_infos` 目录作为外部菜单主入口，同时兼容原 PicMenu 的 `menu_config/menus` 目录。两个目录存在同名配置文件时，主入口中的配置优先；详见下方开发文档。
+本插件兼容原 PicMenu 的外部菜单路径及格式，并在其基础上做了些许扩展，详见下方开发文档
 
 ## 🔧 开发
 
@@ -233,9 +241,12 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   - 支持通过 `funcs` 完整替换功能菜单，并阻止 Alconna 自动探测重复补充功能项
   - 新增 `supported_adapters` 配置，支持为外部菜单声明适配器范围
   - localstore 中的外部菜单配置会优先于原 PicMenu 兼容目录中的同名配置
+  - 外部菜单配置不再允许设置 `alc_force_enable_detect`
 - 调整适配器过滤逻辑，外部菜单配置可覆盖插件 Metadata 中的适配器信息；Alconna 当前命令的帮助接管不受适配器过滤限制
+- 优化 Alconna 帮助接管逻辑：首次未找到可渲染菜单时会尝试包含隐藏项，接管失败时回退原始帮助输出
+- 修复外部菜单目录扫描异常可能导致菜单收集失败的问题
 - 优化菜单排序逻辑，名称拼音相同的插件会按插件 ID 保持稳定顺序
-- 限制 `plugin:` 资源路径只能访问目标插件模块目录内的文件，避免绝对路径、路径越界和符号链接越界访问
+- 限制 `plugin:` 资源路径只能访问目标插件模块内的文件，避免绝对路径、路径越界和符号链接越界访问
 
 ### 0.4.2
 

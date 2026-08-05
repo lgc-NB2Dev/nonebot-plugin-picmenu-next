@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from arclet.alconna import Alconna, CommandMeta, command_manager
 from nonebot.plugin import PluginMetadata
@@ -246,10 +246,14 @@ def test_external_config_rejects_disallowed_nulls(
     import pytest
     from cookit.pyd import type_validate_python
     from nonebot_plugin_picmenu_next.data_source.models import ExternalPluginInfo
+    from pydantic import ValidationError
 
-    for key in ("name", "funcs", "pmn"):
+    for key in ("name", "funcs"):
         with pytest.raises(TypeError, match=f"`{key}` cannot be null"):
             type_validate_python(ExternalPluginInfo, {key: None})
+
+    with pytest.raises(ValidationError):
+        type_validate_python(ExternalPluginInfo, {"pmn": None})
 
 
 def test_external_supported_adapters_accepts_null_but_not_string(
@@ -258,12 +262,13 @@ def test_external_supported_adapters_accepts_null_but_not_string(
     import pytest
     from cookit.pyd import model_fields_set, type_validate_python
     from nonebot_plugin_picmenu_next.data_source.models import ExternalPluginInfo
+    from pydantic import ValidationError
 
     info = type_validate_python(ExternalPluginInfo, {"supported_adapters": None})
     assert "supported_adapters" in model_fields_set(info)
     assert info.supported_adapters is None
 
-    with pytest.raises(TypeError, match="must be an array or null"):
+    with pytest.raises(ValidationError):
         type_validate_python(ExternalPluginInfo, {"supported_adapters": "~satori"})
 
 
@@ -431,6 +436,37 @@ def test_collect_menus_skips_one_broken_config_file(
     assert "broken" not in infos
 
 
+def test_collect_menus_skips_an_unreadable_subdirectory(
+    picmenu_plugin: object,
+    monkeypatch: "pytest.MonkeyPatch",
+    tmp_path: Path,
+) -> None:
+    """An unreadable directory does not block other external menu configs."""
+    from nonebot_plugin_picmenu_next.data_source import collect
+
+    external_dir = tmp_path / "external_infos"
+    unreadable_dir = external_dir / "unreadable"
+    valid_file = external_dir / "valid.json"
+    unreadable_dir.mkdir(parents=True)
+    valid_file.write_text('{"name": "Valid"}', encoding="utf-8")
+    original_iterdir = Path.iterdir
+
+    def iterdir(path: Path):
+        if path == external_dir:
+            return iter((unreadable_dir, valid_file))
+        if path == unreadable_dir:
+            raise OSError("directory unavailable")
+        return original_iterdir(path)
+
+    monkeypatch.setattr(collect, "external_infos_dir", external_dir)
+    monkeypatch.setattr(collect, "pm_menus_dir", tmp_path / "missing-legacy-dir")
+    monkeypatch.setattr(Path, "iterdir", iterdir)
+
+    infos = collect.collect_menus()
+
+    assert infos["valid"].name == "Valid"
+
+
 def test_collect_menus_isolates_an_unreadable_legacy_source(
     picmenu_plugin: object,
     monkeypatch: "pytest.MonkeyPatch",
@@ -444,16 +480,16 @@ def test_collect_menus_isolates_an_unreadable_legacy_source(
     external_dir.mkdir()
     legacy_dir.mkdir()
     (external_dir / "valid.json").write_text('{"name": "Valid"}', encoding="utf-8")
-    scan_path = collect.scan_path
+    original_iterdir = Path.iterdir
 
-    def fail_for_legacy(path: Path, suffixes: Any = None):
+    def iterdir(path: Path):
         if path == legacy_dir:
             raise OSError("legacy source unavailable")
-        yield from scan_path(path, suffixes)
+        return original_iterdir(path)
 
     monkeypatch.setattr(collect, "external_infos_dir", external_dir)
     monkeypatch.setattr(collect, "pm_menus_dir", legacy_dir)
-    monkeypatch.setattr(collect, "scan_path", fail_for_legacy)
+    monkeypatch.setattr(Path, "iterdir", iterdir)
 
     infos = collect.collect_menus()
 
@@ -473,16 +509,16 @@ def test_collect_menus_isolates_an_unreadable_primary_source(
     localstore_dir.mkdir()
     legacy_dir.mkdir()
     (legacy_dir / "legacy.json").write_text('{"name": "Legacy"}', encoding="utf-8")
-    scan_path = collect.scan_path
+    original_iterdir = Path.iterdir
 
-    def fail_localstore(path: Path, suffixes: Any = None):
+    def iterdir(path: Path):
         if path == localstore_dir:
             raise OSError("primary source unavailable")
-        yield from scan_path(path, suffixes)
+        return original_iterdir(path)
 
     monkeypatch.setattr(collect, "external_infos_dir", localstore_dir)
     monkeypatch.setattr(collect, "pm_menus_dir", legacy_dir)
-    monkeypatch.setattr(collect, "scan_path", fail_localstore)
+    monkeypatch.setattr(Path, "iterdir", iterdir)
 
     infos = collect.collect_menus()
 

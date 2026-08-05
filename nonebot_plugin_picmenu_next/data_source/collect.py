@@ -122,11 +122,12 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfo:
 
 
 def scan_path(path: Path, suffixes: Iterable[str] | None = None) -> Generator[Path]:
-    for child in path.iterdir():
-        if child.is_dir():
-            yield from scan_path(child, suffixes)
-        elif suffixes and child.suffix in suffixes:
-            yield child
+    with warning_suppress(f"Failed to scan external menu source {path}", OSError):
+        for child in path.iterdir():
+            if child.is_dir():
+                yield from scan_path(child, suffixes)
+            elif suffixes and child.suffix in suffixes:
+                yield child
 
 
 def collect_menus():
@@ -185,9 +186,8 @@ def collect_menus():
             infos[key] = _load_file(path)
 
     def _load_all(path: Path):
-        with warning_suppress(f"Failed to scan external menu source {path}"):
-            for x in scan_path(path, supported_suffixes):
-                _load_to_infos(x)
+        for x in scan_path(path, supported_suffixes):
+            _load_to_infos(x)
 
     _load_all(external_infos_dir)
 

@@ -1,6 +1,7 @@
 """Tests for help-data models."""
 
 import pytest
+from pydantic import ValidationError
 
 
 def test_external_plugin_info_requires_or_derives_a_name(
@@ -67,7 +68,7 @@ def test_external_config_cannot_set_plugin_authored_detection_policy(
     from cookit.pyd import type_validate_python
     from nonebot_plugin_picmenu_next.data_source.models import ExternalPluginInfo
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         type_validate_python(
             ExternalPluginInfo,
             {"pmn": {"alc_force_enable_detect": True}},
@@ -114,7 +115,7 @@ def test_model_validators_accept_model_instances_and_reject_non_mapping_input(
     assert type_validate_python(ExternalPluginInfo, external).name == "External"
     with pytest.raises(TypeError, match="Expected dict"):
         type_validate_python(PMNPluginExtra, 1)
-    with pytest.raises(TypeError, match="Expected dict"):
+    with pytest.raises(ValidationError):
         type_validate_python(ExternalPluginInfo, 1)
 
 

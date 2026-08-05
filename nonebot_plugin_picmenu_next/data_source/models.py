@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 
 from cookit.pyd import (
     PYDANTIC_V2,
@@ -7,6 +7,7 @@ from cookit.pyd import (
     model_copy,
     model_fields_set,
     model_validator,
+    model_with_model_config,
     type_dump_python,
 )
 from nonebot import get_plugin
@@ -76,6 +77,7 @@ class PMNData(CompatModel):
     alc_force_enable_detect: bool = False
 
 
+@model_with_model_config({**compat_model_config, "extra": "forbid"})
 class ExternalPMNData(CompatModel):
     hidden: bool = False
     markdown: bool = False
@@ -164,35 +166,21 @@ class PMNPluginInfo(CompatModel):
 
 
 class ExternalPluginInfo(CompatModel):
-    name: str = cast("str", None)
+    name: str | None = None
     author: str | None = None
     version: str | None = None
     description: str | None = None
     usage: str | None = None
-    funcs: list[PMDataItem] = cast("list[PMDataItem]", None)
+    funcs: list[PMDataItem] | None = None
     pmn: ExternalPMNData = ExternalPMNData()
     supported_adapters: set[str] | None = None
 
-    @model_validator(mode="before")
-    def normalize_input(cls, values: Any):  # noqa: N805
-        if isinstance(values, ExternalPluginInfo):
-            values = type_dump_python(values, exclude_unset=True)
-        if not isinstance(values, dict):
-            raise TypeError(f"Expected dict, got {type(values)}")
-
-        for key in ("name", "funcs", "pmn"):
+    @model_validator(mode="after")
+    def normalize_input(cls, values: dict[str, Any]):  # noqa: N805
+        # these params cannot be explicitly none
+        for key in ("name", "funcs"):
             if key in values and values[key] is None:
                 raise TypeError(f"`{key}` cannot be null")
-
-        if (
-            isinstance(pmn := values.get("pmn"), dict)
-            and "alc_force_enable_detect" in pmn
-        ):
-            raise TypeError("External `pmn` cannot set `alc_force_enable_detect`")
-
-        if isinstance(values.get("supported_adapters"), str):
-            raise TypeError("`supported_adapters` must be an array or null")
-
         return values
 
     def has_func_override(self) -> bool:
@@ -226,10 +214,6 @@ class ExternalPluginInfo(CompatModel):
         info = self.to_optional_plugin_info(plugin_id)
         return info.to_required(name=name)
 
-    def _merge_pmn_to(self, other: PMNPluginInfo) -> None:
-        for k in model_fields_set(self.pmn):
-            setattr(other.pmn, k, getattr(self.pmn, k))
-
     def merge_to(
         self,
         other: PMNPluginInfo,
@@ -245,8 +229,9 @@ class ExternalPluginInfo(CompatModel):
         for k in model_fields_set(self):
             if k == "funcs":
                 other.pm_data = self.funcs
-            elif k == "pmn":
-                self._merge_pmn_to(other)
+            elif k == "pmn":  # shallow copy pmn
+                for k in model_fields_set(self.pmn):
+                    setattr(other.pmn, k, getattr(self.pmn, k))
             else:
                 setattr(other, k, getattr(self, k))
         return other

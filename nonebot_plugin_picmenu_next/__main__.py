@@ -427,36 +427,36 @@ class PMNHelpExtension(Extension):
         output_type: OutputType,
         content: str,
     ) -> UniMessage:
-        if output_type == "help" and self.command:
-            plugin_id = None
-            try:
-                plugin_id = get_alconna_plugin_id(self.command)
-                if plugin_id:
-                    bot = await self.inject(("bot", BaseBot))
-                    ev = await self.inject(("event", BaseEvent))
+        if output_type != "help" or not self.command:
+            return await super().output_converter(output_type, content)
 
-                    msg = None
-                    show_hidden = False
-                    for _ in range(2):
-                        msg, _, _ = await render_menu(
-                            bot,
-                            ev,
-                            plugin_id=plugin_id,
-                            alc_cmd_id=self.command.path,
-                            alc_command=self.command,
-                            alc_detail_des=content,
-                            show_hidden=show_hidden,
-                            check_adapter_support=False,
-                        )
-                        if msg:
-                            return msg
-                        show_hidden = True
-            except Exception:
-                logger.exception(
-                    "Failed to intercept Alconna help for command {} (plugin {})",
-                    self.command.path,
-                    plugin_id,
+        plugin_id = None
+        try:
+            plugin_id = get_alconna_plugin_id(self.command)
+            if not plugin_id:
+                return await super().output_converter(output_type, content)
+
+            bot = await self.inject(("bot", BaseBot))
+            ev = await self.inject(("event", BaseEvent))
+            for show_hidden in (False, True):
+                msg, _, _ = await render_menu(
+                    bot,
+                    ev,
+                    plugin_id=plugin_id,
+                    alc_cmd_id=self.command.path,
+                    alc_command=self.command,
+                    alc_detail_des=content,
+                    show_hidden=show_hidden,
+                    check_adapter_support=False,
                 )
+                if msg:
+                    return msg
+        except Exception:
+            logger.exception(
+                "Failed to intercept Alconna help for command {} (plugin {})",
+                self.command.path,
+                plugin_id,
+            )
 
         return await super().output_converter(output_type, content)
 
