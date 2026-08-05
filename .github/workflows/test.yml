@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  COVERAGE_PYTHON_VERSION: '3.13'
+  COVERAGE_PYDANTIC_VERSION: '>=2.6'
+
 jobs:
   test:
     name: Test
@@ -23,7 +27,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-      code-quality: write
     env:
       OS: ${{ matrix.os }}
       PYTHON_VERSION: ${{ matrix.python-version }}
@@ -51,10 +54,14 @@ jobs:
           --cov-report=xml:coverage.xml
           --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
 
-      - name: Upload coverage report
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/upload-code-coverage@v1
+      - name: Upload coverage to Codecov
+        if: >-
+          !cancelled() &&
+          matrix.python-version == env.COVERAGE_PYTHON_VERSION &&
+          matrix.pydantic-version == env.COVERAGE_PYDANTIC_VERSION
+        uses: codecov/codecov-action@v7
         with:
-          file: plugins/${{ github.event.repository.name }}/coverage.xml
-          language: Python
-          label: code-coverage/pytest
+          disable_search: true
+          files: coverage.xml
+          flags: unit
+          working-directory: plugins/${{ github.event.repository.name }}
