@@ -642,12 +642,111 @@ async def test_help_extension_falls_back_when_plugin_missing(
     async def fake_inject(dependent: object) -> Bot:  # noqa: ARG001
         return cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
 
+    attempts: list[bool] = []
+
+    async def missing_view_render_menu(*_args: object, **kwargs: object) -> object:
+        attempts.append(cast("bool", kwargs["show_hidden"]))
+        return None, None, None
+
     monkeypatch.setattr(ext, "inject", fake_inject)
-    monkeypatch.setattr(__main__, "get_infos", list)
+    monkeypatch.setattr(__main__, "render_menu", missing_view_render_menu)
 
     msg = await ext.output_converter("help", "fallback help")
 
     assert msg.extract_plain_text() == "fallback help"
+    assert attempts == [False, True]
+
+
+async def test_help_extension_falls_back_when_rendering_raises(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """ADR-0013 logs a render failure and immediately returns Alconna help."""
+    from nonebot_plugin_picmenu_next import __main__
+
+    command = Alconna("failing-render-picmenu")
+    command.meta.extra["matcher.source"] = SimpleNamespace(plugin_id="failing_plugin")
+    ext = __main__.PMNHelpExtension()
+    ext.command = command
+
+    async def fake_inject(dependent: object) -> Bot:  # noqa: ARG001
+        return cast("Bot", SimpleNamespace(adapter=SimpleNamespace()))
+
+    render_attempts = 0
+    logged_context: list[tuple[object, ...]] = []
+
+    async def failing_render_menu(*_args: object, **_kwargs: object) -> object:
+        nonlocal render_attempts
+        render_attempts += 1
+        raise RuntimeError("render failure")
+
+    def capture_exception(_message: str, *args: object) -> None:
+        logged_context.append(args)
+
+    monkeypatch.setattr(ext, "inject", fake_inject)
+    monkeypatch.setattr(__main__, "render_menu", failing_render_menu)
+    monkeypatch.setattr(__main__.logger, "exception", capture_exception)
+
+    msg = await ext.output_converter("help", "fallback help")
+
+    assert msg.extract_plain_text() == "fallback help"
+    assert render_attempts == 1
+    assert logged_context == [(command.path, "failing_plugin")]
+
+
+async def test_help_extension_falls_back_when_context_injection_raises(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """ADR-0013 protects the complete PicMenu interception operation."""
+    from nonebot_plugin_picmenu_next import __main__
+
+    command = Alconna("failing-inject-picmenu")
+    command.meta.extra["matcher.source"] = SimpleNamespace(plugin_id="failing_plugin")
+    ext = __main__.PMNHelpExtension()
+    ext.command = command
+    logged_context: list[tuple[object, ...]] = []
+
+    async def failing_inject(_dependent: object) -> Bot:
+        raise RuntimeError("inject failure")
+
+    def capture_exception(_message: str, *args: object) -> None:
+        logged_context.append(args)
+
+    monkeypatch.setattr(ext, "inject", failing_inject)
+    monkeypatch.setattr(__main__.logger, "exception", capture_exception)
+
+    msg = await ext.output_converter("help", "fallback help")
+
+    assert msg.extract_plain_text() == "fallback help"
+    assert logged_context == [(command.path, "failing_plugin")]
+
+
+async def test_help_extension_falls_back_when_plugin_resolution_raises(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """ADR-0013 protects command ownership resolution before rendering starts."""
+    from nonebot_plugin_picmenu_next import __main__
+
+    command = Alconna("failing-owner-picmenu")
+    ext = __main__.PMNHelpExtension()
+    ext.command = command
+    logged_context: list[tuple[object, ...]] = []
+
+    def failing_plugin_resolution(_command: Alconna) -> str:
+        raise RuntimeError("plugin resolution failure")
+
+    def capture_exception(_message: str, *args: object) -> None:
+        logged_context.append(args)
+
+    monkeypatch.setattr(__main__, "get_alconna_plugin_id", failing_plugin_resolution)
+    monkeypatch.setattr(__main__.logger, "exception", capture_exception)
+
+    msg = await ext.output_converter("help", "fallback help")
+
+    assert msg.extract_plain_text() == "fallback help"
+    assert logged_context == [(command.path, None)]
 
 
 async def test_func_detail_inherits_plugin_template(

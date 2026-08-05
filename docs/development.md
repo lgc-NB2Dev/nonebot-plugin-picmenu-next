@@ -120,11 +120,15 @@ __plugin_meta__ = PluginMetadata(
 
 插件会将其文件名作为 `插件 ID`（如为顶层级插件，通常为插件包名）来判断是否覆盖已存在的插件的菜单信息。同一插件 ID 在两个目录中同时存在时，主入口先加载并生效，兼容入口中的同名文件会被忽略。
 
+目录会被递归扫描，子目录仅用于整理文件，不会参与插件 ID 命名。同一来源内存在同名文件（包括不同扩展名）时，先被扫描到的配置生效，后续文件会告警并跳过。
+
 未定义的顶层字段会保留已收集的插件 Metadata；`description`、`usage` 等可选展示字段可显式设为 `null` 以清空原值。`name`、`funcs`、`pmn` 不接受 `null`。`pmn` 仅覆盖其中显式定义的字段，空对象 `{}` 不会重置现有配置。
 
 `funcs` 是完整功能项列表：省略它时保留原有/自动探测的功能项，显式提供时会整体替换，`[]` 表示清空。显式 `funcs` 同时会阻止 `alc_force_enable_detect` 再追加自动探测结果。
 
 `supported_adapters` 是外部配置的顶层字段，格式与 NoneBot `PluginMetadata.supported_adapters` 一致，例如 `["~onebot.v11", "~satori"]`。省略或设为 `null` 表示支持所有适配器，`[]` 表示不支持任何适配器；显式值会整体替换 Metadata 中的值。它只影响普通帮助菜单的可见性，Alconna 当前命令的帮助接管不会受其限制；菜单 Mixin 仍可改写由适配器过滤产生的隐藏状态。
+
+单个插件 Metadata、外部菜单文件或菜单 Mixin 处理失败时，会记录告警并跳过该来源，不影响其余菜单项的收集与渲染。
 
 注意 `yaml` 与 `toml` 文件的解析器是默认不安装的，可以在下面命令中选其一执行来安装你想要的依赖：
 
@@ -197,8 +201,9 @@ uv pip install nonebot-plugin-picmenu-next[config-parsers]  # 全部安装
 `PMNHelpExtension` 是一个可选的 Alconna 全局扩展，启用后会：
 
 1. 在 `post_init` / `validate` 阶段为已开启 Markdown 的插件替换命令 formatter 为 `PMNMarkdownTextFormatter`
-2. 在 `output_converter` 阶段接管 `-h/--help` 输出，调用 PicMenu 的模板渲染而非直接输出纯文本
-3. 渲染失败时自动重试带上 `show_hidden=True` 参数，确保隐藏功能也能被查到
+2. 在 `output_converter` 阶段接管 `-h/--help` 输出，尝试将帮助渲染为 PicMenu 图片
+3. 首次未找到可渲染菜单时，会携带 `show_hidden=True` 重试一次，以查找隐藏功能
+4. 两次均未找到或渲染过程发生异常时，回退 Alconna 原始帮助输出
 
 这里的隐藏只控制普通帮助菜单的可见性，而非命令权限。用户已经调用具体 Alconna 命令时，帮助接管会忽略隐藏项权限策略和适配器过滤，以便渲染该命令的当前帮助；请不要用 `hidden` 保护敏感功能。
 
