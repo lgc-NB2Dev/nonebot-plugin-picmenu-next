@@ -1,2 +1,3 @@
 comment:
-  require_changes: true
+  require_changes: 'coverage_drop OR uncovered_patch'
+  require_ci_to_pass: false
