@@ -38,16 +38,18 @@ __plugin_meta__ = PluginMetadata(
 
 开启 Markdown 后，可以在描述、用法、功能详情中使用 `plugin:` 前缀引用插件自身或其他插件的模块资源文件：
 
-| 语法                     | 说明                     |
-| ------------------------ | ------------------------ |
-| `plugin:self,相对路径`   | 引用当前插件模块下的文件 |
-| `plugin:插件ID,相对路径` | 引用指定插件模块下的文件 |
+| 语法                     | 说明                           |
+| ------------------------ | ------------------------------ |
+| `plugin:self,相对路径`   | 引用当前被渲染插件模块下的文件 |
+| `plugin:插件ID,相对路径` | 引用指定插件模块下的文件       |
 
 该语法在以下位置自动解析：
 
 - Markdown 图片 `![alt](plugin:self,img/logo.png)`
 - Markdown 链接 `[下载](plugin:self,file.zip)`
 - HTML `<img src="plugin:self,...">` `<a href="plugin:self,...">` `<video src="..." poster="...">`
+
+`self` 始终指向当前被渲染的插件菜单项，而不是编写 Markdown 的插件。因此外部菜单配置或 Mixin 生成的 Markdown 使用 `plugin:self` 时，仍会解析到该菜单项对应的插件；需要引用其他插件时请显式写出插件 ID。
 
 ### 想自定义 Alconna 命令自动探测的行为？
 
@@ -111,11 +113,16 @@ __plugin_meta__ = PluginMetadata(
 
 本插件会读取以下目录中的所有 `json` / `yml(yaml)` / `toml` 文件并作为外部菜单配置加载：
 
-- 插件 localstore 路径下的 `external_infos` 文件夹
-- 原 PicMenu 的 `menu_config/menus` 文件夹
+- 插件 localstore 路径下的 `external_infos` 文件夹（主入口）
+- 原 PicMenu 的 `menu_config/menus` 文件夹（兼容入口）
 
-插件会将其文件名作为 `插件 ID` (如为顶层级插件，通常为插件包名) 来判断是否覆盖已存在的插件的菜单信息  
-仅被配置文件定义的顶层属性会被覆盖
+插件会将其文件名作为 `插件 ID`（如为顶层级插件，通常为插件包名）来判断是否覆盖已存在的插件的菜单信息。同一插件 ID 在两个目录中同时存在时，主入口先加载并生效，兼容入口中的同名文件会被忽略。
+
+未定义的顶层字段会保留已收集的插件 Metadata；`description`、`usage` 等可选展示字段可显式设为 `null` 以清空原值。`name`、`funcs`、`pmn` 不接受 `null`。`pmn` 仅覆盖其中显式定义的字段，空对象 `{}` 不会重置现有配置。
+
+`funcs` 是完整功能项列表：省略它时保留原有/自动探测的功能项，显式提供时会整体替换，`[]` 表示清空。显式 `funcs` 同时会阻止 `alc_force_enable_detect` 再追加自动探测结果。
+
+`supported_adapters` 是外部配置的顶层字段，格式与 NoneBot `PluginMetadata.supported_adapters` 一致，例如 `["~onebot.v11", "~satori"]`。省略或设为 `null` 表示支持所有适配器，`[]` 表示不支持任何适配器；显式值会整体替换 Metadata 中的值。它只影响普通帮助菜单的可见性，Alconna 当前命令的帮助接管不会受其限制；菜单 Mixin 仍可改写由适配器过滤产生的隐藏状态。
 
 注意 `yaml` 与 `toml` 文件的解析器是默认不安装的，可以在下面命令中选其一执行来安装你想要的依赖：
 
@@ -190,6 +197,8 @@ uv pip install nonebot-plugin-picmenu-next[config-parsers]  # 全部安装
 1. 在 `post_init` / `validate` 阶段为已开启 Markdown 的插件替换命令 formatter 为 `PMNMarkdownTextFormatter`
 2. 在 `output_converter` 阶段接管 `-h/--help` 输出，调用 PicMenu 的模板渲染而非直接输出纯文本
 3. 渲染失败时自动重试带上 `show_hidden=True` 参数，确保隐藏功能也能被查到
+
+这里的隐藏只控制普通帮助菜单的可见性，而非命令权限。用户已经调用具体 Alconna 命令时，帮助接管会忽略隐藏项权限策略和适配器过滤，以便渲染该命令的当前帮助；请不要用 `hidden` 保护敏感功能。
 
 配置 `PMN_ALCONNA_GLOBAL_EXT=True` 后插件会通过 `add_global_extension(PMNHelpExtension)` 全局注册。
 

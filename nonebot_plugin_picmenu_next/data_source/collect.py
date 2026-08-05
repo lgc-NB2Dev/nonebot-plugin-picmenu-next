@@ -188,14 +188,14 @@ def collect_menus():
         for x in scan_path(path, supported_suffixes):
             _load_to_infos(x)
 
+    _load_all(external_infos_dir)
+
     if pm_menus_dir.exists():
         logger.warning(
             "Old PicMenu menus dir is deprecated"
             ", recommended to migrate to PicMenu Next config dir",
         )
         _load_all(pm_menus_dir)
-
-    _load_all(external_infos_dir)
 
     return infos
 

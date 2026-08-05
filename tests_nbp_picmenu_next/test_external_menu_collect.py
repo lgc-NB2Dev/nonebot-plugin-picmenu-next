@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
 
@@ -37,6 +38,30 @@ def make_plugin(
         "Plugin",
         SimpleNamespace(id_=plugin_id, module_name=plugin_id, metadata=metadata),
     )
+
+
+def test_collect_menus_prefers_localstore_config_over_legacy_config(
+    picmenu_plugin: object,  # noqa: ARG001
+    monkeypatch: "pytest.MonkeyPatch",
+    tmp_path: Path,
+) -> None:
+    """The localstore entry wins when both external-menu paths define one ID."""
+    from nonebot_plugin_picmenu_next.data_source import collect
+
+    legacy_dir = tmp_path / "menu_config" / "menus"
+    localstore_dir = tmp_path / "external_infos"
+    legacy_dir.mkdir(parents=True)
+    localstore_dir.mkdir()
+    (legacy_dir / "shared.json").write_text('{"name": "Legacy"}', encoding="utf-8")
+    (localstore_dir / "shared.json").write_text(
+        '{"name": "Localstore"}', encoding="utf-8"
+    )
+    monkeypatch.setattr(collect, "pm_menus_dir", legacy_dir)
+    monkeypatch.setattr(collect, "external_infos_dir", localstore_dir)
+
+    infos = collect.collect_menus()
+
+    assert infos["shared"].name == "Localstore"
 
 
 def test_external_pmn_merges_only_explicit_nested_fields(
