@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
@@ -35,20 +35,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Set up workspace
-        id: workspace
         uses: lgc-NB2Dev/workspace/.github/actions/setup-workspace@main
 
-      - name: Install prerequisites
-        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
-        run: |-
-          uv sync
-          uv run playwright install chromium
-
       - name: Install Specific Version Pydantic (Bash)
-        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
         shell: bash
         run: uv add "pydantic$PYDANTIC_VERSION"
 
       - name: Run Pytest
-        working-directory: ${{ steps.workspace.outputs.workspace-directory }}
-        run: uv run pytest plugins/nonebot-plugin-picmenu-next/tests_nbp_picmenu_next
+        run: uv run pytest
