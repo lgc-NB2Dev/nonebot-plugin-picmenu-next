@@ -44,3 +44,13 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "nonebot_plugin_picmenu_next/__init__.py"
+
+[tool.poe.tasks]
+gen-defs.cmd = "uv run scripts/gen_defs.py"
+test.cmd = "pytest"
+coverage.cmd = "pytest --cov=nonebot_plugin_picmenu_next --cov-report=term-missing"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"

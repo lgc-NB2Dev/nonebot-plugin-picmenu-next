@@ -23,6 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+      code-quality: write
     env:
       OS: ${{ matrix.os }}
       PYTHON_VERSION: ${{ matrix.python-version }}
@@ -38,5 +39,22 @@ jobs:
         shell: bash
         run: uv add "pydantic$PYDANTIC_VERSION"
 
-      - name: Run Pytest
-        run: uv run pytest
+      - name: Run pytest with coverage
+        working-directory: plugins/${{ github.event.repository.name }}
+        shell: bash
+        env:
+          PLUGIN_MODULE: ${{ github.event.repository.name }}
+        run: >-
+          uv run pytest
+          --cov="${PLUGIN_MODULE//-/_}"
+          --cov-branch
+          --cov-report=xml:coverage.xml
+          --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: plugins/${{ github.event.repository.name }}/coverage.xml
+          language: Python
+          label: code-coverage/pytest
