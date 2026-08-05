@@ -326,3 +326,5 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 ### 0.1.1
 
 - 尝试兼容 Pydantic V1
+
+<!-- Temporary change for Codecov PR reporting verification. -->
