@@ -27,9 +27,12 @@ uv run pytest
 
 ## Rules
 
+- Keep test coverage as high as possible to avoid dead code. Code included in the current runtime's coverage scope should be covered unless it is version-specific, dependency-gated, or an intentional error path that is impractical to trigger safely.
+
 - Run `scripts/gen_defs.py` and `yarn prettier -cw defs/*` after changing `ExternalPluginInfo` and related models.
 
 ## Gotchas
 
 - When preserving or changing Pydantic fields-set state, do not mutate the set returned by `model_fields_set()` directly with `.add()` or `.update()`. Prefer assigning through normal model fields with `setattr()` or `model.field = value` so Pydantic maintains its own field state across v1/v2 compatibility.
+
 - Pydantic v1 supports `PrivateAttr`, but its `BaseModel.__setattr__` does not dispatch normal property setters. For internal private attributes that must work on both v1 and v2, write the private attribute directly (for example `item._alc_cmd_id = value`) and expose only a read property if needed; do not rely on `item.alc_cmd_id = value`.
