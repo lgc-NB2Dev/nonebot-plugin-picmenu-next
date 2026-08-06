@@ -47,8 +47,8 @@ path = "nonebot_plugin_picmenu_next/__init__.py"
 
 [tool.poe.tasks]
 gen-defs.shell = "uv run scripts/gen_defs.py && pnpx prettier -cw defs"
-test.cmd = "pytest"
-coverage.cmd = "pytest --cov=nonebot_plugin_picmenu_next --cov-branch --cov-report=term-missing"
+test.cmd = "uv run pytest"
+coverage.cmd = "uv run pytest --cov=nonebot_plugin_picmenu_next --cov-branch --cov-report=term-missing"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

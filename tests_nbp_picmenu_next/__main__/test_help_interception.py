@@ -106,6 +106,36 @@ async def test_help_interception_falls_back_after_both_normal_misses(
     assert attempts == [False, True]
 
 
+async def test_help_interception_leaves_ineligible_outputs_to_alconna(
+    picmenu_plugin: object,
+    monkeypatch: "pytest.MonkeyPatch",
+) -> None:
+    """Only owned Help output enters the PicMenu interception pipeline."""
+    from nonebot_plugin_picmenu_next import __main__ as main
+
+    async def unexpected_pipeline_call(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("ineligible output entered the interception pipeline")
+
+    ext = main.PMNHelpExtension()
+    monkeypatch.setattr(ext, "inject", unexpected_pipeline_call)
+    monkeypatch.setattr(main, "render_menu", unexpected_pipeline_call)
+
+    ext.command = _owned_command("not-help-picmenu", "not_help_plugin")
+    assert (
+        await ext.output_converter("error", "Alconna error")
+    ).extract_plain_text() == "Alconna error"
+
+    ext.command = None
+    assert (
+        await ext.output_converter("help", "Uninitialized fallback")
+    ).extract_plain_text() == "Uninitialized fallback"
+
+    ext.command = Alconna("unowned-picmenu")
+    assert (
+        await ext.output_converter("help", "Unowned fallback")
+    ).extract_plain_text() == "Unowned fallback"
+
+
 async def test_help_interception_uses_hidden_snapshot_for_adapter_hidden_plugin(
     picmenu_plugin: object,
     monkeypatch: "pytest.MonkeyPatch",

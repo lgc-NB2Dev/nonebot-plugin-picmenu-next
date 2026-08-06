@@ -62,6 +62,32 @@ def test_markdown_formatter_formats_subcommands_arguments_and_options(
     assert "Create a user." in nested
 
 
+def test_markdown_formatter_hides_ignored_nested_options(
+    picmenu_plugin: object,
+) -> None:
+    """Ignored options remain hidden when a subcommand expands in Markdown Help."""
+    from nonebot_plugin_picmenu_next.data_source.alconna import (
+        PMNMarkdownTextFormatter,
+    )
+
+    command = Alconna(
+        "ignored-option-picmenu",
+        Subcommand(
+            "group",
+            Option("--visible", help_text="Visible nested option."),
+            Option("--ignored", help_text="Ignored nested option."),
+        ),
+    )
+    formatter = PMNMarkdownTextFormatter().add(command)
+    formatter.ignore_names.add("--ignored")
+    trace = next(iter(formatter.data.values()))
+
+    rendered = formatter.format(trace)
+
+    assert "Visible nested option." in rendered
+    assert "Ignored nested option." not in rendered
+
+
 def test_markdown_formatter_accepts_root_prefixed_help_parts(
     picmenu_plugin: object,
 ) -> None:
