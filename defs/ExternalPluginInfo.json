@@ -1,6 +1,7 @@
 {
   "$defs": {
     "ExternalPMNData": {
+      "additionalProperties": false,
       "properties": {
         "hidden": { "default": false, "title": "Hidden", "type": "boolean" },
         "markdown": { "default": false, "title": "Markdown", "type": "boolean" },
@@ -44,7 +45,11 @@
     }
   },
   "properties": {
-    "name": { "default": null, "title": "Name", "type": "string" },
+    "name": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }],
+      "default": null,
+      "title": "Name"
+    },
     "author": {
       "anyOf": [{ "type": "string" }, { "type": "null" }],
       "default": null,
@@ -66,10 +71,12 @@
       "title": "Usage"
     },
     "funcs": {
+      "anyOf": [
+        { "items": { "$ref": "#/$defs/PMDataItem" }, "type": "array" },
+        { "type": "null" }
+      ],
       "default": null,
-      "items": { "$ref": "#/$defs/PMDataItem" },
-      "title": "Funcs",
-      "type": "array"
+      "title": "Funcs"
     },
     "pmn": {
       "$ref": "#/$defs/ExternalPMNData",

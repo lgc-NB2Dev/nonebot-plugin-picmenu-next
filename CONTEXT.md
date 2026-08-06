@@ -27,7 +27,7 @@ Input supplied by a user to locate a plugin or function item in a help menu.
 The deterministic display order of plugin menu items.
 
 **菜单索引**:
-The 1-based position of a menu item in the current sorted menu snapshot. It is not a stable identifier.
+The 1-based position of a menu item in the current discoverable sorted menu snapshot. A Help view must not advertise an index when its target is absent from that snapshot. It is not a stable identifier.
 
 **同拼音菜单项**:
 Plugin menu items with the same pinyin sort key.

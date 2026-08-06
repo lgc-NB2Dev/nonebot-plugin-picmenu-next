@@ -5,7 +5,11 @@ from pathlib import Path
 
 import nonebot
 
-nonebot.init(localstore_use_cwd=True)
+nonebot.init(
+    localstore_cache_dir="temp/cache",
+    localstore_config_dir="temp/config",
+    localstore_data_dir="temp/data",
+)
 
 nonebot.require("nonebot_plugin_picmenu_next")
 

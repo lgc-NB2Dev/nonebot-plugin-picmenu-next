@@ -222,7 +222,6 @@ async def render_menu(
     q_plugin: str | None = None,
     q_function: str | None = None,
     show_hidden: bool = False,
-    check_adapter_support: bool = True,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
 
 
@@ -236,7 +235,6 @@ async def render_menu(
     alc_command: Alconna | None = None,
     alc_detail_des: str | None = None,
     show_hidden: bool = False,
-    check_adapter_support: bool = True,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]: ...
 
 
@@ -250,11 +248,8 @@ async def render_menu(
     alc_command: Alconna | None = None,
     alc_detail_des: str | None = None,
     show_hidden: bool = False,
-    check_adapter_support: bool = True,
 ) -> tuple[UniMessage | None, PMNPluginInfo | None, PMDataItem | None]:
-    infos = get_infos()
-    if check_adapter_support:
-        infos = filter_unsupported_adapters(infos, bot.adapter)
+    infos = filter_unsupported_adapters(get_infos(), bot.adapter)
     infos = await resolve_main_mixin(infos)
     if not show_hidden:
         infos = [x for x in infos if not x.pmn.hidden]
@@ -447,7 +442,6 @@ class PMNHelpExtension(Extension):
                     alc_command=self.command,
                     alc_detail_des=content,
                     show_hidden=show_hidden,
-                    check_adapter_support=False,
                 )
                 if msg:
                     return msg

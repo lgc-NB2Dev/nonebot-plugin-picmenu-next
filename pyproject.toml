@@ -46,7 +46,7 @@ build-backend = "hatchling.build"
 path = "nonebot_plugin_picmenu_next/__init__.py"
 
 [tool.poe.tasks]
-gen-defs.cmd = "uv run scripts/gen_defs.py"
+gen-defs.shell = "uv run scripts/gen_defs.py && pnpx prettier -cw defs"
 test.cmd = "pytest"
 coverage.cmd = "pytest --cov=nonebot_plugin_picmenu_next --cov-branch --cov-report=term-missing"
 
