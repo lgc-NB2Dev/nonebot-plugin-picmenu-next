@@ -40,7 +40,7 @@ jobs:
 
       - name: Install Specific Version Pydantic (Bash)
         shell: bash
-        run: uv add "pydantic$PYDANTIC_VERSION"
+        run: uv add "pydantic$PYDANTIC_VERSION" "fastapi<0.119.0"
 
       - name: Run pytest with coverage
         working-directory: plugins/${{ github.event.repository.name }}
