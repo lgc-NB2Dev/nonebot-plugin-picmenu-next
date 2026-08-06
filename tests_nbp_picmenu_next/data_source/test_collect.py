@@ -136,6 +136,26 @@ async def test_plugin_metadata_falls_back_to_distribution_version_and_author(
     assert info.author == "Alice"
 
 
+async def test_plugin_metadata_normalizes_picmenu_extra_at_collection_boundary(
+    picmenu_plugin: object,
+) -> None:
+    """Collection accepts the legacy capitalized author key in metadata extras."""
+    from nonebot_plugin_picmenu_next.data_source import collect
+
+    metadata = PluginMetadata(
+        name="Capitalized Author",
+        description="description",
+        usage="usage",
+        extra={"Author": "Alice"},
+    )
+
+    info = await collect.get_info_from_plugin(
+        make_plugin("capitalized_author", metadata),
+    )
+
+    assert info.author == "Alice"
+
+
 def test_collect_menus_loads_yaml_and_applies_or_appends_external_infos(
     picmenu_plugin: object,
     monkeypatch: "pytest.MonkeyPatch",
@@ -249,7 +269,7 @@ def test_external_config_rejects_disallowed_nulls(
     from pydantic import ValidationError
 
     for key in ("name", "funcs"):
-        with pytest.raises(TypeError, match=f"`{key}` cannot be null"):
+        with pytest.raises(ValidationError, match=f"`{key}` cannot be null"):
             type_validate_python(ExternalPluginInfo, {key: None})
 
     with pytest.raises(ValidationError):

@@ -1,7 +1,14 @@
 from collections import defaultdict
-from collections.abc import Callable, Coroutine, Sequence
+from collections.abc import Coroutine, Sequence
 from dataclasses import dataclass
-from typing import Any, Concatenate, Generic, TypeAlias, TypeVar
+from typing import (  # noqa: UP035 - Python 3.10 compat
+    Any,
+    Callable,
+    Concatenate,
+    Generic,
+    TypeAlias,
+    TypeVar,
+)
 from typing_extensions import ParamSpec
 
 from cookit import DecoListCollector

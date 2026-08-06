@@ -60,7 +60,11 @@ async def get_info_from_plugin(plugin: Plugin) -> PMNPluginInfo:
     extra: PMNPluginExtra | None = None
     if meta:
         with warning_suppress(f"Failed to parse plugin metadata of {plugin.id_}"):
-            extra = type_validate_python(PMNPluginExtra, meta.extra)
+            metadata_extra = {
+                kl if (kl := key.lower()) == "author" else key: value
+                for key, value in meta.extra.items()
+            }
+            extra = type_validate_python(PMNPluginExtra, metadata_extra)
 
     name = normalize_plugin_name(meta.name if meta else plugin.id_)
 

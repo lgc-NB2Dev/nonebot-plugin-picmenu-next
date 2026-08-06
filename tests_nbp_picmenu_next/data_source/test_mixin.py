@@ -6,6 +6,14 @@ from typing import Any, cast
 import pytest
 
 
+def test_mixin_type_aliases_resolve_at_runtime(picmenu_plugin: object) -> None:
+    """Mixin extension type aliases resolve while the plugin data source loads."""
+    from nonebot_plugin_picmenu_next.data_source import mixin
+
+    assert mixin.PluginCollectMixin is not None
+    assert mixin.SelfMixin is not None
+
+
 def test_self_mixin_registration_requires_an_owning_plugin(
     picmenu_plugin: object,
     monkeypatch: "pytest.MonkeyPatch",

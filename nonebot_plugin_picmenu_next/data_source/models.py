@@ -8,7 +8,6 @@ from cookit.pyd import (
     model_fields_set,
     model_validator,
     model_with_model_config,
-    type_dump_python,
 )
 from nonebot import get_plugin
 from nonebot.plugin import Plugin
@@ -96,19 +95,6 @@ class PMNPluginExtra(CompatModel):
     menu_data: list[PMDataItem] | None = None
     pmn: PMNData | None = None
 
-    @model_validator(mode="before")
-    def normalize_input(cls, values: Any):  # noqa: N805
-        if isinstance(values, PMNPluginExtra):
-            values = type_dump_python(values, exclude_unset=True)
-        if not isinstance(values, dict):
-            raise TypeError(f"Expected dict, got {type(values)}")
-        should_normalize_keys = {x for x in values if x.lower() == "author"}
-        for key in should_normalize_keys:
-            value = values[key]
-            del values[key]
-            values[key.lower()] = value
-        return values
-
 
 class OptionalPMNPluginInfo(CompatModel):
     name: str | None = None
@@ -175,12 +161,14 @@ class ExternalPluginInfo(CompatModel):
     pmn: ExternalPMNData = ExternalPMNData()
     supported_adapters: set[str] | None = None
 
-    @model_validator(mode="after")
-    def normalize_input(cls, values: dict[str, Any]):  # noqa: N805
+    @model_validator(mode="before")
+    def normalize_input(cls, values: Any):  # noqa: N805
         # these params cannot be explicitly none
+        if not isinstance(values, dict):
+            return values
         for key in ("name", "funcs"):
             if key in values and values[key] is None:
-                raise TypeError(f"`{key}` cannot be null")
+                raise ValueError(f"`{key}` cannot be null")
         return values
 
     def has_func_override(self) -> bool:

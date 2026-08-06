@@ -98,23 +98,16 @@ def test_external_pmn_conversion_preserves_only_declared_display_options(
     assert converted.alc_force_enable_detect is False
 
 
-def test_model_validators_accept_model_instances_and_reject_non_mapping_input(
+def test_external_model_validator_rejects_non_mapping_input(
     picmenu_plugin: object,
 ) -> None:
-    """Both external schemas normalize model input but reject scalar configuration."""
+    """External configuration rejects scalar input before field validation."""
     from cookit.pyd import type_validate_python
-    from nonebot_plugin_picmenu_next.data_source.models import (
-        ExternalPluginInfo,
-        PMNPluginExtra,
-    )
+    from nonebot_plugin_picmenu_next.data_source.models import ExternalPluginInfo
 
-    extra = PMNPluginExtra(author="Alice")
     external = ExternalPluginInfo(name="External")
 
-    assert type_validate_python(PMNPluginExtra, extra).author == "Alice"
     assert type_validate_python(ExternalPluginInfo, external).name == "External"
-    with pytest.raises(TypeError, match="Expected dict"):
-        type_validate_python(PMNPluginExtra, 1)
     with pytest.raises(ValidationError):
         type_validate_python(ExternalPluginInfo, 1)
 
