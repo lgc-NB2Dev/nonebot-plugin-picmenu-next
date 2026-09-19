@@ -14,17 +14,48 @@ poe coverage [...]  # pytest (with branch coverage and terminal report)
 
 ## Structure
 
-- `data_source/`: Plugin info models (`PMNPluginInfo`, `PMDataItem`), data collection (Alconna / plugin metadata), pinyin matching
-- `templates/`: Template rendering pipeline
-  - `default/`: Built-in default template ("default") — Jinja2 templates, CSS, JS, image rendering entry point
-  - `jj_utils.py`: Jinja2 context function factory (`build_base_render_kwargs`), global Jinja2 filters
-  - `pw_utils.py`: Playwright route utilities (local-file route, `local_file_route_prp_transformer`)
-  - `hr_utils.py`: htmlrender integration, KaTeX resource lookup (v0.6/v0.7 paths)
-- `markdown.py`: `plugin:` resource path syntax processor — `PluginResPathProcessor`/`PluginResPathTransformer` type aliases, `build_default_prp_processor`, `resource_resolve_plugin`
-- `__main__.py`: Command handler entry point (matchers, help menu logic)
-- `config.py`: Plugin global config
-- `ft_parser.py`: PicMenu custom Rich Text format parser
-- `utils.py`: General utilities
+```text
+nonebot_plugin_picmenu_next/  Plugin package, help data collection and menu rendering
+  __init__.py                 Plugin metadata, driver startup, refresh and template preload
+  __main__.py                 Command handler: matchers, help interception, menu queries
+  config.py                   Plugin global config model
+  ft_parser.py                PicMenu legacy ft rich-text format parser
+  markdown.py                 plugin resource path syntax processor
+  utils.py                    Package name regex and general helpers
+  data_source/                Help data models, collection and matching
+    __init__.py               In-memory info cache, refresh_infos and get_infos
+    models.py                 PMDataItem, PMNPluginInfo and ExternalPluginInfo schemas
+    collect.py                Collects plugin metadata, menus and user custom infos
+    alconna.py                Alconna help formatting and menu data projection
+    pinyin.py                 Pinyin chunk matching for menu queries
+    mixin.py                  Mixin collectors, priority chain, main/detail resolution
+  templates/                  Template rendering pipeline
+    __init__.py               Builtin template discovery, loading and registration
+    jj_utils.py               Jinja2 render kwargs builder and global filters
+    pw_utils.py               Playwright local-file route helpers
+    hr_utils.py               htmlrender integration and KaTeX resource lookup
+    default/                  Builtin default template
+      __init__.py             Registers default index, detail and function renderers
+      res/
+        base.html.jinja       Base layout page
+        index.html.jinja      Plugin list page
+        detail.html.jinja     Plugin detail page
+        css/                  4 stylesheets: base, dark, index, detail
+        js/                   Empty, reserved for template scripts
+        third-party/          2 code highlight themes: code-colorful, code-github-dark
+  res/
+    gan_shen_me.jpg           Tip image shown when hidden menu access is denied
+tests_nbp_picmenu_next/       Pytest suite mirroring the plugin package; shared fixtures in conftest.py
+docs/
+  development.md              Development guide
+  adr/                        16 numbered ADRs 0001-0016 recording design decisions
+scripts/
+  gen_defs.py                 Generates defs/ExternalPluginInfo.json from models
+defs/
+  ExternalPluginInfo.json     Generated schema for external plugin info
+.github/workflows/            CI test and PyPI publish workflows
+CONTEXT.md                    Domain language reference for the help-menu context
+```
 
 ## Rules
 
